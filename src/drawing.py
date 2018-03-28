@@ -23,8 +23,9 @@ def shapeDraw(event,former_x,former_y,flags,param):
     if event==cv2.EVENT_LBUTTONDOWN:
         drawing=True
         current_former_x,current_former_y=former_x,former_y
-        #allPoints[0].append(former_x); 
-        #allPoints[1].append(former_y);
+        if(not sk):
+            allPoints[0].append(former_x); 
+            allPoints[1].append(former_y);
 
     elif event==cv2.EVENT_MOUSEMOVE:
         if drawing==True:
@@ -33,8 +34,9 @@ def shapeDraw(event,former_x,former_y,flags,param):
                 current_former_x = former_x
                 current_former_y = former_y
                 #print former_x,former_y
-                allPoints[0].append(former_x); 
-                allPoints[1].append(former_y); 
+                if(sk):
+                    allPoints[0].append(former_x); 
+                    allPoints[1].append(former_y); 
     elif event==cv2.EVENT_LBUTTONUP:
         drawing=False
         if mode==True:
@@ -46,8 +48,10 @@ def shapeDraw(event,former_x,former_y,flags,param):
     return former_x,former_y    
 
 
-def shapeRequest():
+def shapeRequest(sketch):
     global im
+    global sk
+    sk = sketch; 
     im = cv2.imread("../img/testBel.png")
     #print(im.shape);
     cv2.namedWindow("Input Image")

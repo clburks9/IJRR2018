@@ -47,8 +47,8 @@ def makeInitialBelief():
 	return bel; 
 
 
-def drawShape():
-	allPoints = shapeRequest();
+def drawShape(sketch):
+	allPoints = shapeRequest(sketch);
 	for i in range(0,len(allPoints[0])):
 		allPoints[0][i] = (allPoints[0][i])*10/640; 
 	for i in range(0,len(allPoints[1])):
@@ -80,21 +80,9 @@ if __name__ == '__main__':
 	prior = makeInitialBelief();
 
 	#Draw a shape
-	pairedPoints = drawShape(); 
+	pairedPoints = drawShape(sketch); 
 
-
-
-	# plt.scatter(allPoints[0],allPoints[1],c='r'); 
-	# plt.xlim([0,10]); 
-	# plt.ylim([0,10]); 
-	# plt.show(); 
-
-	
-
-	# for simplex in cHull.simplices:
-	# 	plt.plot(pairedPoints[simplex,0],pairedPoints[simplex,1],'k-'); 
-	# plt.show(); 
-
+	#Get points
 	if(sketch):
 		#Get convex hull
 		cHull = ConvexHull(pairedPoints);
@@ -104,20 +92,9 @@ if __name__ == '__main__':
 		vertices = pairedPoints;
 
 
-	# for v in vertices:
-	# 	print(v[0],v[1]); 
-	# 	plt.scatter(v[0],v[1],c='r');
-	# plt.show(); 
-
-
 	#Make softmax model
-	#print(vertices)
 	pz = Softmax(); 
 	pz.buildPointsModel(vertices,steepness=2); 
-
-	# [x,y,dom] = pz.plot2D(low=[0,0],high=[10,10],delta=0.1,vis=False);
-	# plt.contourf(x,y,dom,cmap='inferno'); 
-	# plt.show(); 
 
 
 	#Update belief
