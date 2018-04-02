@@ -52,7 +52,9 @@ def shapeRequest(sketch):
     global im
     global sk
     sk = sketch; 
-    im = cv2.imread("../img/testBel.png")
+    #im = cv2.imread("../img/testBel.png")
+    im = cv2.imread('../img/scene.png'); 
+
     #print(im.shape);
     cv2.namedWindow("Input Image")
     cv2.setMouseCallback('Input Image',shapeDraw)
@@ -62,4 +64,4 @@ def shapeRequest(sketch):
         if k==27:
             break
     cv2.destroyAllWindows()
-    return allPoints; 
+    return [allPoints,im.shape[0],im.shape[1]]; 

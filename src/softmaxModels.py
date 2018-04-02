@@ -665,14 +665,16 @@ class Softmax:
 				for j in range(0,resy):
 					dom[i][j] = np.argmax([model[h][i][j] for h in range(0,len(self.weights))]); 
 		if(vis):
-			plt.contourf(x,y,dom,cmap = 'viridis'); 
+			plt.contourf(x,y,dom,cmap = 'inferno'); 
 			
 			fig = plt.figure()
 			ax = fig.gca(projection='3d');
 			colors = ['b','g','r','c','m','y','k','w','b','g']; 
 			for i in range(0,len(model)):
-				ax.plot_surface(x,y,model[i],color = colors[i]); 
-			
+				ax.plot_surface(x,y,np.array(model[i]),color = colors[i]); 
+			ax.set_xlabel('X/East Location (m)');
+			ax.set_ylabel('Y/West Location (m)');
+			ax.set_zlabel('Likelihood'); 
 			plt.show(); 
 		else:
 			return x,y,dom;

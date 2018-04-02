@@ -12,7 +12,7 @@ of multivariate normals, or Gaussian Mixture Models (GMM).
 
 Version 1.3.5: added normalized ISD
 Version 1.3.6: removed warning filtering
-
+Version 1.3.7: added pointEval function for gaussian
 ***********************************************************
 '''
 
@@ -21,7 +21,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2016, Cohrint"
 __credits__ = ["Luke Burks", "Nisar Ahmed"]
 __license__ = "GPL"
-__version__ = "1.3.6"
+__version__ = "1.3.7"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -73,6 +73,13 @@ class Gaussian:
 		if(self.weight != b.weight):
 			return False;
 		return True;
+
+	def pointEval(self,x):
+		'''
+		Evaluates the Gaussian at a point x
+		'''
+		self.clean();
+		return g.weight*mvn.pdf(x,g.mean,g.var);
 
 
 

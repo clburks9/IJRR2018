@@ -25,18 +25,22 @@ from gaussianMixtures import GM,Gaussian;
 from softmaxModels import Softmax; 
 from drawing import shapeRequest
 from scipy.spatial import ConvexHull
-
-
+from scipy.stats import linregress
+from copy import deepcopy
 
 def makeInitialBelief():
 	bel = GM(); 
 	numMix = 100; 
+	varscale = .2; 
 	for i in range(0,numMix):
 		w = np.random.random(); 
-		mean = [np.random.random()*8+2,np.random.random()*8+2];
-		tmp = np.random.random()*1; 
-		var = [[np.random.random()*1+1,0],[0,np.random.random()*1+1]]; 
+		mean = [np.random.random()*8,np.random.random()*8];
+		tmp = np.random.random()*varscale; 
+		var = [[np.random.random()*1+varscale,0],[0,np.random.random()*1+varscale]]; 
 		bel.addG(Gaussian(mean,var,w)); 
+
+	bel.addG(Gaussian([4,7],[[1,0],[0,1]],4)); 
+
 	bel.normalizeWeights(); 
 	[x,y,belView] = bel.plot2D(low=[0,0],high=[10,10],vis=False); 
 	plt.contourf(x,y,belView); 
@@ -48,11 +52,11 @@ def makeInitialBelief():
 
 
 def drawShape(sketch):
-	allPoints = shapeRequest(sketch);
+	[allPoints,l,w] = shapeRequest(sketch);
 	for i in range(0,len(allPoints[0])):
-		allPoints[0][i] = (allPoints[0][i])*10/640; 
+		allPoints[0][i] = (allPoints[0][i])*10/w; 
 	for i in range(0,len(allPoints[1])):
-		allPoints[1][i] = 10 - (allPoints[1][i])*10/480; 
+		allPoints[1][i] = 10-(allPoints[1][i])*10/l; 
 
 
 	pairedPoints = np.zeros(shape=(len(allPoints[0]),2)); 
@@ -71,6 +75,142 @@ def subsampleHull(cHull,pairedPoints,N = 3):
 		vertices.append([pairedPoints[cHull.vertices[ind],0],pairedPoints[cHull.vertices[ind],1]])
 	return vertices
 
+
+def distance(p1,p2):
+	return np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2);
+
+def angleOfThreePoints(a,b,c):
+	ab = [b[0]-a[0],b[1]-a[1]]; 
+	bc = [c[0]-b[0],c[1]-b[1]]; 
+	num = ab[0]*bc[0] + ab[1]*bc[1]; 
+	dem = distance([0,0],ab)*distance([0,0],bc); 
+	theta = np.arccos(num/dem); 
+	return theta; 
+
+def polyArea(points):
+	area = 0; 
+	q = points[-1]; 
+	for p in points:
+		area += p[0]*q[1]-p[1]*q[0]; 
+		q=p; 
+	return area/2; 
+
+def fitSimplePolyToHull(cHull,pairedPoints,N = 4):
+	vertices = [];  
+
+	for i in range(0,len(cHull.vertices)):
+		vertices.append([pairedPoints[cHull.vertices[i],0],pairedPoints[cHull.vertices[i],1]]);
+
+	
+	while(len(vertices) > N):
+		allAngles = []; 
+		#for each point, find the angle it forces between the two points on either side
+		#find first point
+		a = vertices[-1]; 
+		b = vertices[0]; 
+		c = vertices[1]; 
+		allAngles.append(abs(angleOfThreePoints(a,b,c))); 
+		for i in range(1,len(vertices)-1):
+			#find others
+			a = vertices[i-1];
+			b = vertices[i]; 
+			c = vertices[i+1]; 
+			allAngles.append(abs(angleOfThreePoints(a,b,c)));
+		#find last point
+		a = vertices[-2]; 
+		b = vertices[-1]; 
+		c = vertices[0]; 
+		allAngles.append(abs(angleOfThreePoints(a,b,c))); 
+
+		#remove the point with the smallest angle change
+		smallest = min(allAngles); 
+		vertices.remove(vertices[allAngles.index(smallest)]); 
+
+		#repeat until number is equal to N
+
+
+	return vertices;
+
+
+def smoothAngles(verts,angs):
+	newAngs = []; 
+
+	area = polyArea(verts); 
+
+	G = Gaussian(0,.5*area,1); 
+
+	for i in range(0,len(angs)):
+		tmp=0; 
+		for j in range(0,len(angs)):
+			tmp+= G.pointEval(distance(verts[i],verts[j])); 
+		newAngs.append(tmp); 
+	return newAngs; 
+
+
+
+
+
+def fitBestPolyToHull(cHull,pairedPoints):
+	vertices = [];  
+
+	for i in range(0,len(cHull.vertices)):
+		vertices.append([pairedPoints[cHull.vertices[i],0],pairedPoints[cHull.vertices[i],1]]);
+
+	initialArea = polyArea(vertices); 
+	initialLen = len(vertices); 
+
+	allPointSets = []; 
+	allScores = []; 
+
+	while(len(vertices) > 3):
+		allAngles = []; 
+		#for each point, find the angle it forces between the two points on either side
+		#find first point
+		a = vertices[-1]; 
+		b = vertices[0]; 
+		c = vertices[1]; 
+		allAngles.append(abs(angleOfThreePoints(a,b,c))); 
+		for i in range(1,len(vertices)-1):
+			#find others
+			a = vertices[i-1];
+			b = vertices[i]; 
+			c = vertices[i+1]; 
+			allAngles.append(abs(angleOfThreePoints(a,b,c)));
+		#find last point
+		a = vertices[-2]; 
+		b = vertices[-1]; 
+		c = vertices[0]; 
+		allAngles.append(abs(angleOfThreePoints(a,b,c))); 
+
+
+		#Experimental:
+		#Smooth angles with gaussian convolution
+		#Mean: 0, SD: .5*area
+		allAngles = smoothAngles(vertices,allAngles); 
+
+		#remove the point with the smallest angle change
+		smallest = min(allAngles); 
+		vertices.remove(vertices[allAngles.index(smallest)]); 
+
+		#score
+		allPointSets.append(deepcopy(vertices)); 
+		alpha = .5; 
+		beta = 3; 
+
+		score = alpha*(initialArea/polyArea(vertices))**2 + beta*(initialLen/len(vertices))**2;
+
+		allScores.append(score); 
+
+	print(allScores); 
+	x = range(3,initialLen); 
+	x = x[::-1]; 
+	plt.plot(x,allScores); 
+	plt.show(); 
+	vertices = allPointSets[allScores.index(min(allScores))]; 
+
+	return vertices;
+
+
 if __name__ == '__main__':
 
 	#Turn off to select points manually
@@ -82,23 +222,36 @@ if __name__ == '__main__':
 	#Draw a shape
 	pairedPoints = drawShape(sketch); 
 
-	#Get points
-	if(sketch):
-		#Get convex hull
-		cHull = ConvexHull(pairedPoints);
-		#Get N separated points
-		vertices = subsampleHull(cHull,pairedPoints,4); 
-	else:
-		vertices = pairedPoints;
+
+
+	cHull = ConvexHull(pairedPoints);
+	vertices = fitSimplePolyToHull(cHull,pairedPoints,N=5); 
+	#vertices = fitBestPolyToHull(cHull,pairedPoints); 
+	print(vertices); 
+	plt.scatter([vertices[i][0] for i in range(0,len(vertices))],[vertices[i][1] for i in range(0,len(vertices))])
+	plt.show();
+
+	
+	# #Get points
+	# if(sketch):
+	# 	#Get convex hull
+	# 	cHull = ConvexHull(pairedPoints);
+	# 	#Get N separated points
+	# 	vertices = subsampleHull(cHull,pairedPoints,4); 
+	# else:
+	# 	vertices = pairedPoints;
+	
+
+	
 
 
 	#Make softmax model
 	pz = Softmax(); 
-	pz.buildPointsModel(vertices,steepness=2); 
+	pz.buildPointsModel(vertices,steepness=5); 
 
 
 	#Update belief
-	post = pz.runVBND(prior,1); 
+	post = pz.runVBND(prior,4); 
 
 
 	#display
@@ -110,4 +263,19 @@ if __name__ == '__main__':
 	axarr[1].contourf(xobs,yobs,cobs,cmap='inferno'); 
 	axarr[2].contourf(xpost,ypost,cpost,cmap='viridis'); 
 	plt.show(); 
+
+	#pz.plot2D(low=[0,0],high=[10,10],delta=0.1);
+
+	# fig,ax = plt.subplots(); 
+	# ax.contourf(xprior,yprior,cprior,cmap='viridis'); 
+	# ax.set_xlabel('X/East Location (m)');
+	# ax.set_ylabel('Y/West Location (m)');
+
+	# fig,ax = plt.subplots(); 
+	# ax.contourf(xpost,ypost,cpost,cmap='viridis'); 
+	# ax.set_xlabel('X/East Location (m)');
+	# ax.set_ylabel('Y/West Location (m)');
+
+	# plt.show(); 
+
 
