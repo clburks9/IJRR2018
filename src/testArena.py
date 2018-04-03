@@ -67,15 +67,6 @@ def drawShape(sketch):
 	return pairedPoints; 
 
 
-def subsampleHull(cHull,pairedPoints,N = 3):
-	vertices = [];  
-
-	for i in range(0,N):
-		ind = int(i*len(cHull.vertices)/N)
-		vertices.append([pairedPoints[cHull.vertices[ind],0],pairedPoints[cHull.vertices[ind],1]])
-	return vertices
-
-
 def distance(p1,p2):
 	return np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2);
 
@@ -132,17 +123,25 @@ def fitSimplePolyToHull(cHull,pairedPoints,N = 4):
 	return vertices;
 
 
-def smoothAngles(verts,angs):
+def distanceAlongPoints(verts,i,j):
+
+	dist = 0; 
+	for k in range(i,j):
+		dist += distance(verts[k],[k+1]); 
+	return dist; 
+
+def smoothAngles(verts,angs,normPer):
 	newAngs = []; 
 
-	area = polyArea(verts); 
+	#area = polyArea(verts); 
 
-	G = Gaussian(0,.5*area,1); 
+	G = Gaussian(0,.5*normPer,1); 
 
 	for i in range(0,len(angs)):
 		tmp=0; 
 		for j in range(0,len(angs)):
-			tmp+= G.pointEval(distance(verts[i],verts[j])); 
+			#tmp+= G.pointEval(distance(verts[i],verts[j]))*angs[j];
+			tmp+= G.pointEval(distanceAlongPoints(verts,i,j))*angs[j];  
 		newAngs.append(tmp); 
 	return newAngs; 
 
@@ -185,8 +184,10 @@ def fitBestPolyToHull(cHull,pairedPoints):
 
 		#Experimental:
 		#Smooth angles with gaussian convolution
-		#Mean: 0, SD: .5*area
-		allAngles = smoothAngles(vertices,allAngles); 
+		#Mean: 0, SD: perimeter/N
+		perimeter = distanceAlongPoints(-1,len(vertices)); 
+
+		allAngles = smoothAngles(vertices,allAngles,perimeter/N); 
 
 		#remove the point with the smallest angle change
 		smallest = min(allAngles); 
@@ -213,6 +214,8 @@ def fitBestPolyToHull(cHull,pairedPoints):
 
 if __name__ == '__main__':
 
+	#How many points in the polygon
+
 	#Turn off to select points manually
 	sketch = True; 
 
@@ -224,24 +227,14 @@ if __name__ == '__main__':
 
 
 
+	#Get N Vertices of the shape
 	cHull = ConvexHull(pairedPoints);
 	vertices = fitSimplePolyToHull(cHull,pairedPoints,N=5); 
 	#vertices = fitBestPolyToHull(cHull,pairedPoints); 
-	print(vertices); 
+
+	#Show Vertices
 	plt.scatter([vertices[i][0] for i in range(0,len(vertices))],[vertices[i][1] for i in range(0,len(vertices))])
 	plt.show();
-
-	
-	# #Get points
-	# if(sketch):
-	# 	#Get convex hull
-	# 	cHull = ConvexHull(pairedPoints);
-	# 	#Get N separated points
-	# 	vertices = subsampleHull(cHull,pairedPoints,4); 
-	# else:
-	# 	vertices = pairedPoints;
-	
-
 	
 
 
@@ -276,6 +269,6 @@ if __name__ == '__main__':
 	# ax.set_xlabel('X/East Location (m)');
 	# ax.set_ylabel('Y/West Location (m)');
 
-	# plt.show(); 
+	plt.show(); 
 
 
