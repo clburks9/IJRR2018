@@ -835,8 +835,10 @@ class Softmax:
 
 def test1DSoftmax():
 
-	weight = [-30,-20,-10,0]; 
-	bias = [60,50,30,0]; 
+	# weight = [-30,-20,-10,0]; 
+	# bias = [60,50,30,0]; 
+	weight = [-5,0]; 
+	bias = [5,0]; 
 	softClass = 0;
 	low = 0; 
 	high = 5; 
@@ -851,6 +853,7 @@ def test1DSoftmax():
 	#Get the posterior
 	post = a.runVB(prior,softClassNum = softClass);
 	
+	a.plot1D(res=res,low = 0, high = 5); 
 
 	#Plot Everything
 	[x0,classes] = a.plot1D(res = res,vis = False); 
@@ -1225,7 +1228,7 @@ def testLWIS():
 
 if __name__ == "__main__":
 
-	#test1DSoftmax(); 
+	test1DSoftmax(); 
 	#test2DSoftmax(); 
 	#test4DSoftmax();
 	#testRectangleModel();  
@@ -1237,7 +1240,7 @@ if __name__ == "__main__":
 	#testMakeNear(); 
 	#testLogisticRegression(); 
 	#testDiscritization(); 
-	testLWIS(); 
+	#testLWIS(); 
 	
 
 

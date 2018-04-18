@@ -113,6 +113,14 @@ def fitSimplePolyToHull(cHull,pairedPoints,N = 4):
 		c = vertices[0]; 
 		allAngles.append(abs(angleOfThreePoints(a,b,c))); 
 
+		#Experimental:
+		#Smooth angles with gaussian convolution
+		#Mean: 0, SD: perimeter/N
+		# perimeter = distanceAlongPoints(vertices,-1,len(vertices)); 
+
+		# allAngles = smoothAngles(vertices,allAngles,perimeter/N); 
+
+
 		#remove the point with the smallest angle change
 		smallest = min(allAngles); 
 		vertices.remove(vertices[allAngles.index(smallest)]); 
@@ -182,12 +190,7 @@ def fitBestPolyToHull(cHull,pairedPoints):
 		allAngles.append(abs(angleOfThreePoints(a,b,c))); 
 
 
-		#Experimental:
-		#Smooth angles with gaussian convolution
-		#Mean: 0, SD: perimeter/N
-		perimeter = distanceAlongPoints(-1,len(vertices)); 
 
-		allAngles = smoothAngles(vertices,allAngles,perimeter/N); 
 
 		#remove the point with the smallest angle change
 		smallest = min(allAngles); 
