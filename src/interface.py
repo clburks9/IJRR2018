@@ -1,11 +1,34 @@
+"""
+***********************************************************
+File: interface.py
+Author: Luke Burks
+Date: April 2018
+
+Implements a PYQT5 interface that allows human aided 
+target tracking through sketches, drone launches, 
+and human push/robot pull semantic information
+
+***********************************************************
+"""
+
+__author__ = "Luke Burks"
+__copyright__ = "Copyright 2018"
+__credits__ = ["Luke Burks"]
+__license__ = "GPL"
+__version__ = "0.1"
+__maintainer__ = "Luke Burks"
+__email__ = "luke.burks@colorado.edu"
+__status__ = "Development"
+
 
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import *; 
-from PyQt5.QtGui import QIcon, QPixmap, QBitmap, QPainter, QFont, QColor, QImage
-from PyQt5.QtCore import QRect,QPoint,QSize,QLineF;
+from PyQt5.QtGui import *;
+from PyQt5.QtCore import *;
 import sys
 
 from interfaceFunctions import *; 
+from planeFunctions import *;
 import numpy as np
 import time
 
