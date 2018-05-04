@@ -228,6 +228,7 @@ if __name__ == '__main__':
 	#Draw a shape
 	pairedPoints = drawShape(sketch); 
 
+	print(pairedPoints); 
 
 
 	#Get N Vertices of the shape
