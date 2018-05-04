@@ -14,7 +14,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2018"
 __credits__ = ["Luke Burks"]
 __license__ = "GPL"
-__version__ = "0.1"
+__version__ = "0.1.1"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -33,31 +33,68 @@ from planeFunctions import *;
 
 # def imageKeyRelease(QKeyEvent,wind):
 
-# 	print("Key Pressed: {}".format(QKeyEvent.key())); 
 
-# 	speed = 10; 
-# 	if(QKeyEvent.key() == QtCore.Qt.Key_Up):
-# 		wind.robPose[1] = wind.robPose[1] - speed; 
-# 	elif(QKeyEvent.key() == QtCore.Qt.Key_Left):
-# 		wind.robPose[0] = wind.robPose[0] - speed;
-# 	elif(QKeyEvent.key() == QtCore.Qt.Key_Down):
-# 		wind.robPose[1] = wind.robPose[1] + speed; 
-# 	elif(QKeyEvent.key() == QtCore.Qt.Key_Right):
-# 		wind.robPose[0] = wind.robPose[0] + speed;
-
-# 	print("RobPose: {}".format(wind.robPose)); 
-
-# 	radius = 25; 
-
-# 	for i in range(-int(radius/2)+wind.robPose[0],int(radius/2)+wind.robPose[0]):
-# 		for j in range(-int(radius/2) + wind.robPose[1],int(radius/2)+wind.robPose[1]):
-# 			#if(i>0 and j>0 and i<wind.imgHeight and j<wind.imgWidth):
-# 			tmp1 = min(wind.imgWidth-1,max(0,i)); 
-# 			tmp2 = min(wind.imgHeight-1,max(0,j)); 
-# 			wind.boolmask[tmp1,tmp2] = False; 
 
 # 	updateImage(wind); 
 
+def moveRobot(wind,event=None):
+	#print("Key Pressed: {}".format(event.key())); 
+
+	nomSpeed = wind.ROBOT_NOMINAL_SPEED; 
+	if(event is not None):
+		if(event.key() == QtCore.Qt.Key_Up):
+			delta = int(wind.trueModel.transitionEval([wind.copPose[0],wind.copPose[1]-nomSpeed])); 
+			if(nomSpeed+delta < 0):
+				speed = 0; 
+			else:
+				speed = nomSpeed + delta;
+			wind.copPose[1] = wind.copPose[1] - speed; 
+		elif(event.key() == QtCore.Qt.Key_Left):
+			delta = int(wind.trueModel.transitionEval([wind.copPose[0]-nomSpeed,wind.copPose[1]])); 
+			if(nomSpeed+delta < 0):
+				speed = 0; 
+			else:
+				speed = nomSpeed + delta;
+			wind.copPose[0] = wind.copPose[0] - speed;
+		elif(event.key() == QtCore.Qt.Key_Down):
+			delta = int(wind.trueModel.transitionEval([wind.copPose[0],wind.copPose[1]+nomSpeed]));
+			if(nomSpeed+delta < 0):
+				speed = 0; 
+			else:
+				speed = nomSpeed +delta; 
+			wind.copPose[1] = wind.copPose[1] + speed; 
+		elif(event.key() == QtCore.Qt.Key_Right):
+			delta = int(wind.trueModel.transitionEval([wind.copPose[0]+nomSpeed,wind.copPose[1]])); 
+			if(nomSpeed+delta < 0):
+				speed = 0; 
+			else:
+				speed = nomSpeed + delta; 
+			wind.copPose[0] = wind.copPose[0] + speed;
+
+
+	#print("copPose: {}".format(wind.copPose)); 
+
+	rad = wind.ROBOT_VIEW_RADIUS;
+
+	points = []; 
+
+	for i in range(-int(rad/2)+wind.copPose[0],int(rad/2)+wind.copPose[0]):
+		for j in range(-int(rad/2) + wind.copPose[1],int(rad/2)+wind.copPose[1]):
+			#if(i>0 and j>0 and i<wind.imgHeight and j<wind.imgWidth):
+			tmp1 = min(wind.imgWidth-1,max(0,i)); 
+			tmp2 = min(wind.imgHeight-1,max(0,j)); 
+			points.append([tmp1,tmp2]); 
+	defog(wind,points); 
+
+	points = []; 
+	rad = wind.ROBOT_SIZE_RADIUS; 
+	for i in range(-int(rad/2)+wind.copPose[0],int(rad/2)+wind.copPose[0]):
+		for j in range(-int(rad/2) + wind.copPose[1],int(rad/2)+wind.copPose[1]):
+			#if(i>0 and j>0 and i<wind.imgHeight and j<wind.imgWidth):
+			tmp1 = min(wind.imgWidth-1,max(0,i)); 
+			tmp2 = min(wind.imgHeight-1,max(0,j)); 
+			points.append([tmp1,tmp2]); 
+	planeFlushPaint(wind.robotPlane,points,QColor(0,255,0,255)); 
 
 
 def startSketch(wind):
@@ -76,6 +113,8 @@ def imageMousePress(QMouseEvent,wind):
 		name = wind.sketchName.text(); 
 		if(name not in wind.allSketchPlanes.keys()):
 			wind.allSketchPlanes[name] = makeTransparentPlane(wind); 
+			wind.objectsDrop.addItem(name);
+			wind.allSketchNames.append(name); 
 		else:
 			planeFlushPaint(wind.allSketchPlanes[name],[]);
 
@@ -101,8 +140,7 @@ def imageMouseRelease(QMouseEvent,wind):
 		tmp = wind.sketchName.text(); 
 		wind.sketchName.clear();
 		wind.sketchName.setPlaceholderText("Sketch Name");
-		wind.objectsDrop.addItem(tmp);
-		wind.allSketchNames.append(tmp); 
+
 		wind.allSketches[tmp] = wind.allSketchPaths[-1]; 
 
 		wind.sketchListen = False; 
@@ -115,7 +153,7 @@ def updateModels(wind,name):
 	xFudge = len(name)*10/2; 
 
 	#fitSimplePolyToHull
-	vertices = fitSimplePolyToHull(cHull,pairedPoints,N=5); 
+	vertices = fitSimplePolyToHull(cHull,pairedPoints,N=4); 
 
 
 	centx = np.mean([vertices[i][0] for i in range(0,len(vertices))])-xFudge; 
