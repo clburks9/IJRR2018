@@ -23,78 +23,136 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import *; 
 from PyQt5.QtGui import *;
 from PyQt5.QtCore import *;
+
 import sys
 import numpy as np
 from scipy.spatial import ConvexHull
 
 from planeFunctions import *;
 
+from matplotlib.backends.backend_qt5agg import FigureCanvas
+from matplotlib.figure import Figure, SubplotParams
+import matplotlib.pyplot as plt
+from shapely.geometry import Polygon,Point
+import shapely
+
+def makeBeliefMap(wind):
+	[x,y,c] = wind.assumedModel.belief.plot2D(low=[0,0],high=[wind.imgWidth,wind.imgHeight],vis=False);
+	sp = SubplotParams(left=0.,bottom=0.,right=1.,top=1.); 
+	fig = Figure(subplotpars=sp); 
+	canvas = FigureCanvas(fig); 
+	ax = fig.add_subplot(111); 
+	ax.contourf(np.transpose(c),cmap='viridis',alpha=1); 
+	ax.set_axis_off(); 
+	canvas.draw(); 
+	size=canvas.size(); 
+	width,height = size.width(),size.height(); 
+	im = QImage(canvas.buffer_rgba(),width,height,QtGui.QImage.Format_RGB32); 
+	#im = im.mirrored(horizontal = True); 
+	im = im.mirrored(vertical=True);
+
+	pm = QPixmap(im); 
+	pm = pm.scaled(wind.imgWidth,wind.imgHeight); 
+	return pm; 
 
 
-# def imageKeyRelease(QKeyEvent,wind):
+def makeModelMap(wind,layer):
+	sp = SubplotParams(left=0.,bottom=0.,right=1.,top=1.); 
+	fig = Figure(subplotpars=sp); 
+	canvas = FigureCanvas(fig); 
+	ax = fig.add_subplot(111); 
+	#vmax = np.amax(layer)+1; 
+	#vmin = np.amin(layer)-1; 
+	#print(np.amax(layer),np.amin(layer)); 
+	#levels = np.arange(vmin,vmax); 
+	#ax.contourf(np.transpose(layer),cmap='seismic',levels=levels); 
+	ax.contourf(np.transpose(layer),cmap='seismic',vmin=-10,vmax=10);
+	ax.set_axis_off(); 
+
+	canvas.draw(); 
+	size=canvas.size(); 
+	width,height = size.width(),size.height(); 
+	im = QImage(canvas.buffer_rgba(),width,height,QtGui.QImage.Format_ARGB32); 
+	#im = im.mirrored(horizontal = True); 
+	im = im.mirrored(vertical=True);
+
+	pm = QPixmap(im); 
+	pm = pm.scaled(wind.imgWidth,wind.imgHeight); 
+	return pm; 
+
+def convertPixmapToGrayArray(pm):
+	channels_count = 4
+	image = pm.toImage()
+	s = image.bits().asstring(437 * 754 * channels_count)
+	arr = np.fromstring(s, dtype=np.uint8).reshape((754, 437, channels_count))
+
+	r,g,b = arr[:,:,0],arr[:,:,1],arr[:,:,2]; 
+	gray = 0.2989*r+0.5870*g+0.1140*b; 
+
+	return np.amax(gray)-gray.T; 
 
 
-
-# 	updateImage(wind); 
-
-def moveRobot(wind,event=None):
+def moveRobot(wind,eventKey=None):
 	#print("Key Pressed: {}".format(event.key())); 
 
-	nomSpeed = wind.ROBOT_NOMINAL_SPEED; 
-	if(event is not None):
-		if(event.key() == QtCore.Qt.Key_Up):
-			delta = int(wind.trueModel.transitionEval([wind.copPose[0],wind.copPose[1]-nomSpeed])); 
-			if(nomSpeed+delta < 0):
-				speed = 0; 
-			else:
-				speed = nomSpeed + delta;
-			wind.copPose[1] = wind.copPose[1] - speed; 
-		elif(event.key() == QtCore.Qt.Key_Left):
-			delta = int(wind.trueModel.transitionEval([wind.copPose[0]-nomSpeed,wind.copPose[1]])); 
-			if(nomSpeed+delta < 0):
-				speed = 0; 
-			else:
-				speed = nomSpeed + delta;
-			wind.copPose[0] = wind.copPose[0] - speed;
-		elif(event.key() == QtCore.Qt.Key_Down):
-			delta = int(wind.trueModel.transitionEval([wind.copPose[0],wind.copPose[1]+nomSpeed]));
-			if(nomSpeed+delta < 0):
-				speed = 0; 
-			else:
-				speed = nomSpeed +delta; 
-			wind.copPose[1] = wind.copPose[1] + speed; 
-		elif(event.key() == QtCore.Qt.Key_Right):
-			delta = int(wind.trueModel.transitionEval([wind.copPose[0]+nomSpeed,wind.copPose[1]])); 
+	nomSpeed = wind.trueModel.ROBOT_NOMINAL_SPEED; 
+	if(eventKey is not None):
+		if(eventKey == QtCore.Qt.Key_Up):
+			delta = int(wind.trueModel.transitionEval([wind.trueModel.copPose[0],wind.trueModel.copPose[1]-nomSpeed])); 
 			if(nomSpeed+delta < 0):
 				speed = 0; 
 			else:
 				speed = nomSpeed + delta; 
-			wind.copPose[0] = wind.copPose[0] + speed;
+			wind.trueModel.copPose[1] = wind.trueModel.copPose[1] - speed; 
+		elif(eventKey == QtCore.Qt.Key_Left):
+			delta = int(wind.trueModel.transitionEval([wind.trueModel.copPose[0]-nomSpeed,wind.trueModel.copPose[1]])); 
+			if(nomSpeed+delta < 0):
+				speed = 0; 
+			else:
+				speed = nomSpeed + delta;
+			wind.trueModel.copPose[0] = wind.trueModel.copPose[0] - speed;
+		elif(eventKey == QtCore.Qt.Key_Down):
+			delta = int(wind.trueModel.transitionEval([wind.trueModel.copPose[0],wind.trueModel.copPose[1]+nomSpeed]));
+			if(nomSpeed+delta < 0):
+				speed = 0; 
+			else:
+				speed = nomSpeed + delta; 
+			wind.trueModel.copPose[1] = wind.trueModel.copPose[1] + speed; 
+		elif(eventKey == QtCore.Qt.Key_Right):
+			delta = int(wind.trueModel.transitionEval([wind.trueModel.copPose[0]+nomSpeed,wind.trueModel.copPose[1]])); 
+			if(nomSpeed+delta < 0):
+				speed = 0; 
+			else:
+				speed = nomSpeed + delta; 
+			wind.trueModel.copPose[0] = wind.trueModel.copPose[0] + speed;
 
 
 	#print("copPose: {}".format(wind.copPose)); 
 
-	rad = wind.ROBOT_VIEW_RADIUS;
+	rad = wind.trueModel.ROBOT_VIEW_RADIUS;
 
 	points = []; 
 
-	for i in range(-int(rad/2)+wind.copPose[0],int(rad/2)+wind.copPose[0]):
-		for j in range(-int(rad/2) + wind.copPose[1],int(rad/2)+wind.copPose[1]):
-			#if(i>0 and j>0 and i<wind.imgHeight and j<wind.imgWidth):
+	for i in range(-int(rad/2)+wind.trueModel.copPose[0],int(rad/2)+wind.trueModel.copPose[0]):
+		for j in range(-int(rad/2) + wind.trueModel.copPose[1],int(rad/2)+wind.trueModel.copPose[1]):
+			#if(i>0 and j>0 and i<wind.trueModel.imgHeight and j<wind.trueModel.imgWidth):
 			tmp1 = min(wind.imgWidth-1,max(0,i)); 
 			tmp2 = min(wind.imgHeight-1,max(0,j)); 
 			points.append([tmp1,tmp2]); 
 	defog(wind,points); 
 
 	points = []; 
-	rad = wind.ROBOT_SIZE_RADIUS; 
-	for i in range(-int(rad/2)+wind.copPose[0],int(rad/2)+wind.copPose[0]):
-		for j in range(-int(rad/2) + wind.copPose[1],int(rad/2)+wind.copPose[1]):
-			#if(i>0 and j>0 and i<wind.imgHeight and j<wind.imgWidth):
+	rad = wind.trueModel.ROBOT_SIZE_RADIUS; 
+	for i in range(-int(rad/2)+wind.trueModel.copPose[0],int(rad/2)+wind.trueModel.copPose[0]):
+		for j in range(-int(rad/2) + wind.trueModel.copPose[1],int(rad/2)+wind.trueModel.copPose[1]):
+			#if(i>0 and j>0 and i<wind.trueModel.imgHeight and j<wind.trueModel.imgWidth):
 			tmp1 = min(wind.imgWidth-1,max(0,i)); 
 			tmp2 = min(wind.imgHeight-1,max(0,j)); 
 			points.append([tmp1,tmp2]); 
+			wind.assumedModel.transitionLayer[tmp1,tmp2] = wind.trueModel.transitionLayer[tmp1,tmp2];
+
 	planeFlushPaint(wind.robotPlane,points,QColor(0,255,0,255)); 
+
 
 
 def startSketch(wind):
@@ -112,7 +170,8 @@ def imageMousePress(QMouseEvent,wind):
 		wind.sketchingInProgress = True; 
 		name = wind.sketchName.text(); 
 		if(name not in wind.allSketchPlanes.keys()):
-			wind.allSketchPlanes[name] = makeTransparentPlane(wind); 
+			#wind.allSketchPlanes[name] = makeTransparentPlane(wind); 
+			wind.allSketchPlanes[name] = wind.imageScene.addPixmap(makeTransparentPlane(wind));
 			wind.objectsDrop.addItem(name);
 			wind.allSketchNames.append(name); 
 		else:
@@ -141,18 +200,21 @@ def imageMouseRelease(QMouseEvent,wind):
 		wind.sketchName.clear();
 		wind.sketchName.setPlaceholderText("Sketch Name");
 
-		wind.allSketches[tmp] = wind.allSketchPaths[-1]; 
+		cost = wind.costRadioGroup.checkedId(); 
+		speed = wind.speedRadioGroup.checkedId(); 
+		wind.safeRadio.setChecked(True); 
+		wind.nomRadio.setChecked(True); 
 
+		wind.allSketches[tmp] = wind.allSketchPaths[-1]; 
 		wind.sketchListen = False; 
 		wind.sketchingInProgress = False; 
-		updateModels(wind,tmp);
+		updateModels(wind,tmp,cost,speed);
 
-def updateModels(wind,name):
+def updateModels(wind,name,cost,speed):
 	pairedPoints = np.array(wind.allSketches[name]); 
 	cHull = ConvexHull(pairedPoints); 
 	xFudge = len(name)*10/2; 
 
-	#fitSimplePolyToHull
 	vertices = fitSimplePolyToHull(cHull,pairedPoints,N=4); 
 
 
@@ -168,14 +230,45 @@ def updateModels(wind,name):
 	pen = QPen(QColor(255,0,0,255)); 
 	pen.setWidth(10); 
 	painter.setPen(pen); 
-	painter.setFont(QtGui.QFont('Decorative',20)); 
+	painter.setFont(QtGui.QFont('Decorative',25)); 
 	painter.drawText(QPointF(centx,centy),name); 
-	
+	pen = QPen(QColor(0,0,0,255)); 
+	pen.setWidth(10);
+	painter.setPen(pen); 
+	 
 	for i in range(0,len(vertices)):
 		painter.drawLine(QLineF(vertices[i-1][0],vertices[i-1][1],vertices[i][0],vertices[i][1])); 
 
 	painter.end(); 
 	wind.allSketchPlanes[name].setPixmap(pm); 
+
+	wind.assumedModel.makeSketch(vertices,name);
+
+
+	#Update Cost Map
+	poly = Polygon(vertices); 
+	poly = poly.convex_hull; 
+	mina = min([v[0] for v in vertices]);
+	minb = min([v[1] for v in vertices]); 
+	maxa = max([v[0] for v in vertices]); 
+	maxb = max([v[1] for v in vertices]); 
+
+	#print(mina,minb,maxa,maxb); 
+	#poly = shapely.geometry.geo.box(mina,minb,maxa,maxb);
+
+	#print(vertices); 
+	for i in range(mina,maxa):
+		for j in range(minb,maxb):
+			if(poly.contains(Point(i,j))):
+				wind.assumedModel.transitionLayer[i,j] = 5*speed; 
+				wind.assumedModel.costLayer[i,j] = cost*10; 
+				
+	cm = makeModelMap(wind,wind.assumedModel.costLayer); 
+	wind.costMapWidget.setPixmap(cm); 
+	
+	tm = makeModelMap(wind,wind.assumedModel.transitionLayer); 
+	wind.transMapWidget_assumed.setPixmap(tm); 
+
 
 
 def fitSimplePolyToHull(cHull,pairedPoints,N = 4):
@@ -205,20 +298,12 @@ def fitSimplePolyToHull(cHull,pairedPoints,N = 4):
 		c = vertices[0]; 
 		allAngles.append(abs(angleOfThreePoints(a,b,c))); 
 
-		#Experimental:
-		#Smooth angles with gaussian convolution
-		#Mean: 0, SD: perimeter/N
-		# perimeter = distanceAlongPoints(vertices,-1,len(vertices)); 
-
-		# allAngles = smoothAngles(vertices,allAngles,perimeter/N); 
-
 
 		#remove the point with the smallest angle change
 		smallest = min(allAngles); 
 		vertices.remove(vertices[allAngles.index(smallest)]); 
 
 		#repeat until number is equal to N
-
 
 	return vertices;
 
@@ -290,3 +375,14 @@ def loadQuestions(wind):
 	f = open('../data/Questions.txt','r'); 
 	lines = f.read().split("\n"); 
 	wind.questions = lines; 
+
+
+
+def pushButtonPressed(wind):
+	rel = str(wind.relationsDrop.currentText()) 
+	name = str(wind.objectsDrop.currentText());
+
+	wind.assumedModel.stateObsUpdate(name,rel); 
+
+	pm = makeBeliefMap(wind); 
+	wind.beliefMapWidget.setPixmap(pm); 

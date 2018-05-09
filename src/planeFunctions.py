@@ -44,15 +44,13 @@ def makeFogPlane(wind):
 	wind.fogPlane = wind.imageScene.addPixmap(QPixmap.fromImage(wind.fogImage)); 
 
 
+
+
 def makeTransparentPlane(wind):
 	
 	testMap = QPixmap(wind.imgWidth,wind.imgHeight); 
 	testMap.fill(QtCore.Qt.transparent); 
-	
-	tmp = wind.imageScene.addPixmap(testMap); 
-
-	return tmp; 
-
+	return testMap; 
 
 
 def defog(wind,points):
