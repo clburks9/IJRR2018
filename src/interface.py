@@ -12,7 +12,7 @@ Using Model-View-Controller Architecture
 
 Version History (Sort of):
 0.1.1: added robot movement
-
+0.1.2: added automatic robot movement
 
 ***********************************************************
 """
@@ -21,7 +21,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2018"
 __credits__ = ["Luke Burks"]
 __license__ = "GPL"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -63,6 +63,7 @@ class SimulationWindow(QWidget):
 		self.trueModel = Model(trueModel=True);
 		self.assumedModel = Model(trueModel=False); 
 		self.control = Controller(self.assumedModel); 
+		self.makeBreadCrumbColors(); 
 
 
 		self.sketchListen=False; 
@@ -106,6 +107,13 @@ class SimulationWindow(QWidget):
 		self.show()
 
 
+	def makeBreadCrumbColors(self):
+		self.breadColors = []; 
+		num_crumbs = self.trueModel.BREADCRUMB_TRAIL_LENGTH; 
+
+		for i in range(0,num_crumbs):
+			alpha = 255*(i)/num_crumbs; 
+			self.breadColors.append(QColor(0,150,0,alpha))
 
 
 	def keyReleaseEvent(self,event):
@@ -113,15 +121,13 @@ class SimulationWindow(QWidget):
 		if(self.humanControl):
 			if(event.key() in arrowEvents):
 				moveRobot(self,event.key()); 
-				self.assumedModel.copPose = self.trueModel.copPose; 
 			if(event.key() == QtCore.Qt.Key_Space):
 				moveRobot(self,arrowEvents[self.control.getActionKey_Greedy()]);
-				self.assumedModel.copPose = self.trueModel.copPose; 
 
 
 	def makeRobot(self):
 		moveRobot(self,None); 
-		self.assumedModel.copPose = self.trueModel.copPose; 
+		 
 
 	def makeTarget(self):
 		points = []; 

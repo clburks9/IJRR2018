@@ -10,7 +10,14 @@ model
 ***********************************************************
 """
 
-
+__author__ = "Luke Burks"
+__copyright__ = "Copyright 2018"
+__credits__ = ["Luke Burks"]
+__license__ = "GPL"
+__version__ = "0.1.1"
+__maintainer__ = "Luke Burks"
+__email__ = "luke.burks@colorado.edu"
+__status__ = "Development"
 
 
 class Controller:

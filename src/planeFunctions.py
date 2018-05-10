@@ -14,7 +14,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2018"
 __credits__ = ["Luke Burks"]
 __license__ = "GPL"
-__version__ = "0.1"
+__version__ = "0.1.2"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -93,3 +93,21 @@ def planeFlushPaint(planeWidget,points=[],col = None,pen=None):
 		painter.drawPoint(p[0],p[1]); 
 	painter.end(); 
 	planeWidget.setPixmap(pm); 
+
+
+def planeFlushColors(planeWidget,points=[],cols=[]):
+	pm = planeWidget.pixmap(); 
+	pm.fill(QColor(0,0,0,0)); 
+
+
+	painter = QPainter(pm); 
+	for i in range(0,len(points)):
+		pen = QPen(cols[i]); 
+		pen.setWidth(3); 
+		painter.setPen(pen); 
+		painter.drawPoint(points[i][0],points[i][1]); 
+	painter.end(); 
+	planeWidget.setPixmap(pm); 
+
+
+

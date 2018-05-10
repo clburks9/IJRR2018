@@ -14,7 +14,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2018"
 __credits__ = ["Luke Burks"]
 __license__ = "GPL"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -104,7 +104,9 @@ def moveRobot(wind,eventKey=None):
 	wind.trueModel.prevPoses.append(copy(wind.trueModel.copPose)); 
 	if(len(wind.trueModel.prevPoses) > wind.trueModel.BREADCRUMB_TRAIL_LENGTH):
 		wind.trueModel.prevPoses = wind.trueModel.prevPoses[1:];  
-	planeFlushPaint(wind.trailLayer,wind.trueModel.prevPoses,pen=pen); 
+	#planeFlushPaint(wind.trailLayer,wind.trueModel.prevPoses,pen=pen); 
+	planeFlushColors(wind.trailLayer,wind.trueModel.prevPoses,wind.breadColors); 
+
 
 	nomSpeed = wind.trueModel.ROBOT_NOMINAL_SPEED; 
 	if(eventKey is not None):
@@ -137,8 +139,19 @@ def moveRobot(wind,eventKey=None):
 				speed = nomSpeed + delta; 
 			wind.trueModel.copPose[0] = wind.trueModel.copPose[0] + speed;
 
+	wind.assumedModel.copPose = wind.trueModel.copPose;
+	wind.assumedModel.prevPoses = wind.trueModel.prevPoses; 
 
-	#print("copPose: {}".format(wind.copPose)); 
+	movementViewChanges(wind);
+	#movementBeliefChanges(wind);
+
+	if(len(wind.assumedModel.prevPoses) > 1):
+		change = wind.assumedModel.stateLWISUpdate(); 
+		if(change):
+			pm = makeBeliefMap(wind); 
+			wind.beliefMapWidget.setPixmap(pm);   
+
+def movementViewChanges(wind):
 
 	rad = wind.trueModel.ROBOT_VIEW_RADIUS;
 
@@ -164,6 +177,9 @@ def moveRobot(wind,eventKey=None):
 
 	planeFlushPaint(wind.robotPlane,points,QColor(0,255,0,255)); 
 
+
+def movementBeliefChanges(wind):
+	pass; 
 
 
 def startSketch(wind):

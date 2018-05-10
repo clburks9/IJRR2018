@@ -18,7 +18,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2018"
 __credits__ = ["Luke Burks"]
 __license__ = "GPL"
-__version__ = "0.1"
+__version__ = "0.1.2"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -28,6 +28,8 @@ from softmaxModels import Softmax;
 
 import matplotlib.pyplot as plt
 import numpy as np; 
+
+from interfaceFunctions import distance
 
 class Model:
 
@@ -43,7 +45,8 @@ class Model:
 		self.ROBOT_NOMINAL_SPEED = 2; 
 		self.TARGET_SIZE_RADIUS = 10; 
 
-		self.BREADCRUMB_TRAIL_LENGTH = 50; 
+		self.BREADCRUMB_TRAIL_LENGTH = 100; 
+
 
 		#Make Target or Belief
 		if(not self.truth):
@@ -153,6 +156,34 @@ class Model:
 
 		self.belief = soft.runVBND(self.belief,softClass); 
 		self.belief.normalizeWeights(); 
+
+
+	def stateLWISUpdate(self):
+
+		cp=self.prevPoses[-1]; 
+		prev = self.prevPoses[-2]; 
+		theta = np.arctan2([cp[1]-prev[1]],[cp[0]-prev[0]]);
+		#print(theta);  
+		radius = 10; 
+		points = [[cp[0]-radius,cp[1]-radius],[cp[0]+radius,cp[1]-radius],[cp[0]+radius,cp[1]+radius],[cp[0]-radius,cp[1]+radius]]; 
+		soft = Softmax()
+		soft.buildPointsModel(points,steepness=1);
+		#soft.buildTriView(pose = [cp[0],cp[1],theta],length=10,steepness=5); 
+		change = False; 
+		post = GM(); 
+		for g in self.belief:
+			if(distance(cp,g.mean) > 20):
+				post.addG(g); 
+			else:
+				change = True; 
+				post.addG(soft.lwisUpdate(g,0,20,inverse=True));
+		self.belief = post; 
+		self.belief.normalizeWeights(); 
+
+		return change; 
+
+
+
 
 
 
