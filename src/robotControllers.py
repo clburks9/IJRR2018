@@ -34,3 +34,8 @@ class Controller:
 				return 1; 
 			else:
 				return 0;
+
+	def getActionKey_Myopic(self):
+		goal = self.model.belief.findMAPN(); 
+		pose = self.model.copPose; 
+		

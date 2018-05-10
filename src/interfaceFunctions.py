@@ -35,6 +35,7 @@ from matplotlib.figure import Figure, SubplotParams
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon,Point
 import shapely
+from copy import copy,deepcopy
 
 def makeBeliefMap(wind):
 	[x,y,c] = wind.assumedModel.belief.plot2D(low=[0,0],high=[wind.imgWidth,wind.imgHeight],vis=False);
@@ -47,6 +48,7 @@ def makeBeliefMap(wind):
 	canvas.draw(); 
 	size=canvas.size(); 
 	width,height = size.width(),size.height(); 
+
 	im = QImage(canvas.buffer_rgba(),width,height,QtGui.QImage.Format_RGB32); 
 	#im = im.mirrored(horizontal = True); 
 	im = im.mirrored(vertical=True);
@@ -94,6 +96,15 @@ def convertPixmapToGrayArray(pm):
 
 def moveRobot(wind,eventKey=None):
 	#print("Key Pressed: {}".format(event.key())); 
+
+	#place the breadcrumbs
+	#put green mark on place it has been, remove oldest place if above length of trail
+	pen = QPen(QColor(0,150,0,255)); 
+	pen.setWidth(5); 
+	wind.trueModel.prevPoses.append(copy(wind.trueModel.copPose)); 
+	if(len(wind.trueModel.prevPoses) > wind.trueModel.BREADCRUMB_TRAIL_LENGTH):
+		wind.trueModel.prevPoses = wind.trueModel.prevPoses[1:];  
+	planeFlushPaint(wind.trailLayer,wind.trueModel.prevPoses,pen=pen); 
 
 	nomSpeed = wind.trueModel.ROBOT_NOMINAL_SPEED; 
 	if(eventKey is not None):
@@ -165,7 +176,7 @@ def imageMousePress(QMouseEvent,wind):
 		tmp = [QMouseEvent.scenePos().x(),QMouseEvent.scenePos().y()]; 
 		wind.timeLeft = wind.DRONE_WAIT_TIME;
 		revealMapDrone(wind,tmp);
-		updateTimer(wind);   
+		updateDroneTimer(wind);   
 	elif(wind.sketchListen):
 		wind.sketchingInProgress = True; 
 		name = wind.sketchName.text(); 
@@ -215,7 +226,7 @@ def updateModels(wind,name,cost,speed):
 	cHull = ConvexHull(pairedPoints); 
 	xFudge = len(name)*10/2; 
 
-	vertices = fitSimplePolyToHull(cHull,pairedPoints,N=4); 
+	vertices = fitSimplePolyToHull(cHull,pairedPoints,N=wind.NUM_SKETCH_POINTS); 
 
 
 	centx = np.mean([vertices[i][0] for i in range(0,len(vertices))])-xFudge; 
@@ -253,21 +264,22 @@ def updateModels(wind,name,cost,speed):
 	maxa = max([v[0] for v in vertices]); 
 	maxb = max([v[1] for v in vertices]); 
 
-	#print(mina,minb,maxa,maxb); 
-	#poly = shapely.geometry.geo.box(mina,minb,maxa,maxb);
 
-	#print(vertices); 
-	for i in range(mina,maxa):
-		for j in range(minb,maxb):
-			if(poly.contains(Point(i,j))):
-				wind.assumedModel.transitionLayer[i,j] = 5*speed; 
-				wind.assumedModel.costLayer[i,j] = cost*10; 
-				
-	cm = makeModelMap(wind,wind.assumedModel.costLayer); 
-	wind.costMapWidget.setPixmap(cm); 
-	
-	tm = makeModelMap(wind,wind.assumedModel.transitionLayer); 
-	wind.transMapWidget_assumed.setPixmap(tm); 
+	if(speed != 0 or cost != 0):
+
+		for i in range(mina,maxa):
+			for j in range(minb,maxb):
+				if(poly.contains(Point(i,j))):
+					if(speed!=0):
+						wind.assumedModel.transitionLayer[i,j] = 5*speed; 
+					if(cost!=0):
+						wind.assumedModel.costLayer[i,j] = cost*10; 
+		if(cost!=0):		
+			cm = makeModelMap(wind,wind.assumedModel.costLayer); 
+			wind.costMapWidget.setPixmap(cm); 
+		if(speed!=0):
+			tm = makeModelMap(wind,wind.assumedModel.transitionLayer); 
+			wind.transMapWidget_assumed.setPixmap(tm); 
 
 
 
@@ -318,19 +330,30 @@ def angleOfThreePoints(a,b,c):
 	theta = np.arccos(num/dem); 
 	return theta; 
 
-def timerStart(wind):
-	wind.myTimer = QtCore.QTimer(wind); 
+
+def controlTimerStart(wind):
+	wind.controlTimer = QtCore.QTimer(wind); 
+	wind.controlTimer.timeout.connect(lambda: controlTimerTimeout(wind)); 
+	wind.controlTimer.start((1/wind.CONTROL_FREQUENCY)*1000); 
+
+def controlTimerTimeout(wind):
+	arrowEvents = [QtCore.Qt.Key_Up,QtCore.Qt.Key_Down,QtCore.Qt.Key_Left,QtCore.Qt.Key_Right]; 
+	moveRobot(wind,arrowEvents[wind.control.getActionKey_Greedy()]);
+
+
+def droneTimerStart(wind):
+	wind.droneTimer = QtCore.QTimer(wind); 
 	wind.timeLeft = wind.DRONE_WAIT_TIME; 
 
-	wind.myTimer.timeout.connect(lambda: timerTimeout(wind)); 
-	wind.myTimer.start(1000); 
+	wind.droneTimer.timeout.connect(lambda: droneTimerTimeout(wind)); 
+	wind.droneTimer.start(1000); 
 
-	updateTimer(wind); 
+	updateDroneTimer(wind); 
 
-def timerTimeout(wind):
+def droneTimerTimeout(wind):
 	if(wind.timeLeft > 0):	
 		wind.timeLeft -= 1; 
-	updateTimer(wind); 
+	updateDroneTimer(wind); 
 
 
 def launchDrone(wind):
@@ -353,7 +376,7 @@ def revealMapDrone(wind,point):
 	defog(wind,points); 
 
 
-def updateTimer(wind):
+def updateDroneTimer(wind):
 	rcol = 255*wind.timeLeft/wind.DRONE_WAIT_TIME; 
 	gcol = 255*(wind.DRONE_WAIT_TIME-wind.timeLeft)/wind.DRONE_WAIT_TIME; 
 

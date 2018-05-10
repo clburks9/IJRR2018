@@ -40,8 +40,10 @@ class Model:
 
 		self.ROBOT_VIEW_RADIUS = 25; 
 		self.ROBOT_SIZE_RADIUS = 10; 
-		self.ROBOT_NOMINAL_SPEED = 10; 
+		self.ROBOT_NOMINAL_SPEED = 2; 
 		self.TARGET_SIZE_RADIUS = 10; 
+
+		self.BREADCRUMB_TRAIL_LENGTH = 50; 
 
 		#Make Target or Belief
 		if(not self.truth):
@@ -67,6 +69,9 @@ class Model:
 		self.spatialRealtions = {'Inside':0,'South of':4,'West of':1,'North of':2,'East of':3}; 
 
 		self.sketches = {};
+
+		self.prevPoses = []; 
+
 
 		
 
@@ -97,13 +102,14 @@ class Model:
 		self.transitionLayer = np.zeros(shape=(self.bounds['high'][0],self.bounds['high'][1]));
 
 		if(self.truth):
-			for i in range(200,400):
-				for j in range(200,400):
-					self.transitionLayer[i,j] = -8; 
+			# for i in range(200,400):
+			# 	for j in range(200,400):
+			# 		self.transitionLayer[i,j] = -8; 
 
-			for i in range(100,250):
-				for j in range(100,250):
-					self.transitionLayer[i,j] = 5; 
+			# for i in range(100,250):
+			# 	for j in range(100,250):
+			# 		self.transitionLayer[i,j] = 5; 
+			self.transitionLayer = np.load('../models/trueTransitions.npy'); 
 
 
 
@@ -135,7 +141,14 @@ class Model:
 		self.sketches[name] = pz; 
 
 	def stateObsUpdate(self,name,relation):
-		soft = self.sketches[name]; 
+		if(name == 'You'):
+			#Take Cops Position, builid box around it
+			cp=self.copPose; 
+			points = [[cp[0]-5,cp[1]-5],[cp[0]+5,cp[1]-5],[cp[0]+5,cp[1]+5],[cp[0]-5,cp[1]+5]]; 
+			soft = Softmax()
+			soft.buildPointsModel(points,steepness=3); 
+		else:
+			soft = self.sketches[name]; 
 		softClass = self.spatialRealtions[relation]; 
 
 		self.belief = soft.runVBND(self.belief,softClass); 

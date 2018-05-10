@@ -60,15 +60,16 @@ def defog(wind,points):
 
 	wind.fogPlane.setPixmap(QPixmap.fromImage(wind.fogImage));
 
-def planeAddPaint(planeWidget,points=[],col=None):
+def planeAddPaint(planeWidget,points=[],col=None,pen=None):
 
 	pm = planeWidget.pixmap(); 
 
 	painter = QPainter(pm); 
-	if(col is None):
-		pen = QPen(QColor(0,0,0,255)); 
-	else:
-		pen = QPen(col); 
+	if(pen is None):
+		if(col is None):
+			pen = QPen(QColor(0,0,0,255)); 
+		else:
+			pen = QPen(col); 
 	painter.setPen(pen)
 	
 	for p in points:
@@ -76,15 +77,16 @@ def planeAddPaint(planeWidget,points=[],col=None):
 	painter.end(); 
 	planeWidget.setPixmap(pm); 
 
-def planeFlushPaint(planeWidget,points=[],col = None):
+def planeFlushPaint(planeWidget,points=[],col = None,pen=None):
 	pm = planeWidget.pixmap(); 
 	pm.fill(QColor(0,0,0,0)); 
 
 	painter = QPainter(pm); 
-	if(col is None):
-		pen = QPen(QColor(0,0,0,255)); 
-	else:
-		pen = QPen(col); 
+	if(pen is None):
+		if(col is None):
+			pen = QPen(QColor(0,0,0,255)); 
+		else:
+			pen = QPen(col); 
 	painter.setPen(pen)
 	
 	for p in points:

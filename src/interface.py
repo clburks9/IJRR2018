@@ -73,11 +73,15 @@ class SimulationWindow(QWidget):
 		self.allSketchPlanes = {}; 
 		self.sketchLabels = {}; 
 		self.sketchDensity = 5; 
+		self.NUM_SKETCH_POINTS = 4; 
 
 		self.droneClickListen = False; 
 		self.DRONE_WAIT_TIME = 5; 
 		self.timeLeft = self.DRONE_WAIT_TIME; 
 		self.DRONE_VIEW_RADIUS = 75; 
+
+		self.humanControl = False; 
+		self.CONTROL_FREQUENCY = 10; 
 
 
 		self.makeMapGraphics();
@@ -91,22 +95,30 @@ class SimulationWindow(QWidget):
 		self.makeTarget();
 
 
+
 		loadQuestions(self); 
 
-		timerStart(self); 
+		droneTimerStart(self); 
+
+		if(not self.humanControl):
+			controlTimerStart(self); 
 
 		self.show()
 
 
+
+
 	def keyReleaseEvent(self,event):
 		arrowEvents = [QtCore.Qt.Key_Up,QtCore.Qt.Key_Down,QtCore.Qt.Key_Left,QtCore.Qt.Key_Right]; 
-		if(event.key() in arrowEvents):
-			moveRobot(self,event.key()); 
-			self.assumedModel.copPose = self.trueModel.copPose; 
-		if(event.key() == QtCore.Qt.Key_Space):
-			moveRobot(self,arrowEvents[self.control.getActionKey_Greedy()]);
-			self.assumedModel.copPose = self.trueModel.copPose; 
-		
+		if(self.humanControl):
+			if(event.key() in arrowEvents):
+				moveRobot(self,event.key()); 
+				self.assumedModel.copPose = self.trueModel.copPose; 
+			if(event.key() == QtCore.Qt.Key_Space):
+				moveRobot(self,arrowEvents[self.control.getActionKey_Greedy()]);
+				self.assumedModel.copPose = self.trueModel.copPose; 
+
+
 	def makeRobot(self):
 		moveRobot(self,None); 
 		self.assumedModel.copPose = self.trueModel.copPose; 
@@ -147,6 +159,13 @@ class SimulationWindow(QWidget):
 		#make click layer
 		self.clickPlane = self.imageScene.addPixmap(makeTransparentPlane(self));
 
+		#make comet trail layer
+		self.trailLayer = self.imageScene.addPixmap(makeTransparentPlane(self)); 
+
+		#Make goal layer
+		self.goalLayer = self.imageScene.addPixmap(makeTransparentPlane(self)); 
+
+
 		self.imageView.setScene(self.imageScene); 
 		self.layout.addWidget(self.imageView,0,1,15,1); 
 
@@ -169,11 +188,13 @@ class SimulationWindow(QWidget):
 		#************************************************************
 		# self.assumedModel.transitionLayer = convertPixmapToGrayArray(self.fogPlane.pixmap()); 
 		# self.assumedModel.transitionLayer /= 255.0;
+		# self.assumedModel.transitionLayer = np.amax(self.assumedModel.transitionLayer)  - self.assumedModel.transitionLayer; 
 		# self.assumedModel.transitionLayer *= 15.0;
 		# self.assumedModel.transitionLayer -= 10.0; 
 
 		# self.trueModel.transitionLayer = convertPixmapToGrayArray(self.truePlane.pixmap());
 		# self.trueModel.transitionLayer /= 255.0;
+		# self.trueModel.transitionLayer = np.amax(self.trueModel.transitionLayer) - self.trueModel.transitionLayer; 
 		# self.trueModel.transitionLayer *= 15.0;
 		# self.trueModel.transitionLayer -= 10.0; 
 
@@ -182,7 +203,7 @@ class SimulationWindow(QWidget):
 		self.transMapWidget_true.setPixmap(tm); 
 		self.tabs.addTab(self.transMapWidget_true,'True Transitions'); 
 
-		self.tabs.setTabEnabled(1,False); 
+		#self.tabs.setTabEnabled(1,False); 
 
 		self.transMapWidget_assumed = QLabel(); 
 		tm = makeModelMap(self,self.assumedModel.transitionLayer); 
@@ -283,6 +304,7 @@ class SimulationWindow(QWidget):
 		# self.objectsDrop.addItem("Trees 1");
 		# self.objectsDrop.addItem("ROUS");
 		# self.objectsDrop.addItem("Trees 2");
+		self.objectsDrop.addItem("You"); 
 		self.layout.addWidget(self.objectsDrop,7,3); 
 
 		self.pushButton = QPushButton("Submit"); 
@@ -343,6 +365,13 @@ class SimulationWindow(QWidget):
 		self.imageScene.mouseReleaseEvent = lambda event:imageMouseRelease(event,self);
 
 
+		self.saveShortcut = QShortcut(QKeySequence("Ctrl+S"),self); 
+		self.saveShortcut.activated.connect(self.saveTransitions); 
+
+
+	def saveTransitions(self):
+		np.save('../models/trueTransitions.npy',self.assumedModel.transitionLayer); 
+		print("Saved Transition Model");
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv); 
