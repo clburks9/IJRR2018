@@ -65,7 +65,7 @@ class SimulationWindow(QWidget):
 		self.control = Controller(self.assumedModel); 
 		self.makeBreadCrumbColors(); 
 
-
+		#Sketching Params
 		self.sketchListen=False; 
 		self.sketchingInProgress = False; 
 		self.allSketches = {}; 
@@ -76,13 +76,15 @@ class SimulationWindow(QWidget):
 		self.sketchDensity = 5; 
 		self.NUM_SKETCH_POINTS = 4; 
 
+		#Drone Params
 		self.droneClickListen = False; 
 		self.DRONE_WAIT_TIME = 5; 
 		self.timeLeft = self.DRONE_WAIT_TIME; 
 		self.DRONE_VIEW_RADIUS = 75; 
 
+		#Controller Paramas
 		self.humanControl = False; 
-		self.CONTROL_FREQUENCY = 10; 
+		self.CONTROL_FREQUENCY = 10; #Hz
 
 
 		self.makeMapGraphics();
@@ -113,7 +115,7 @@ class SimulationWindow(QWidget):
 
 		for i in range(0,num_crumbs):
 			alpha = 255*(i)/num_crumbs; 
-			self.breadColors.append(QColor(0,150,0,alpha))
+			self.breadColors.append(QColor(150,0,0,alpha))
 
 
 	def keyReleaseEvent(self,event):
@@ -298,7 +300,7 @@ class SimulationWindow(QWidget):
 		self.layout.addWidget(pushLabel,6,2); 
 
 		self.relationsDrop = QComboBox();
-		self.relationsDrop.addItem("Inside"); 
+		self.relationsDrop.addItem("Near"); 
 		self.relationsDrop.addItem("North of"); 
 		self.relationsDrop.addItem("South of");
 		self.relationsDrop.addItem("East of");

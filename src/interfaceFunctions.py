@@ -27,6 +27,7 @@ from PyQt5.QtCore import *;
 import sys
 import numpy as np
 from scipy.spatial import ConvexHull
+import time
 
 from planeFunctions import *;
 
@@ -150,6 +151,17 @@ def moveRobot(wind,eventKey=None):
 		if(change):
 			pm = makeBeliefMap(wind); 
 			wind.beliefMapWidget.setPixmap(pm);   
+
+	checkEndCondition(wind); 
+
+def checkEndCondition(wind):
+	if(distance(wind.trueModel.copPose,wind.trueModel.robPose) < 15):
+		print('End Condition Reached'); 
+		#dialog = QMessageBox('Target Status','Target Captured!'); 
+		dialog = QMessageBox(); 
+		dialog.setText('Target Captured!'); 
+		dialog.exec_(); 
+		#wind.destroy(); 
 
 def movementViewChanges(wind):
 
@@ -355,6 +367,7 @@ def controlTimerStart(wind):
 def controlTimerTimeout(wind):
 	arrowEvents = [QtCore.Qt.Key_Up,QtCore.Qt.Key_Down,QtCore.Qt.Key_Left,QtCore.Qt.Key_Right]; 
 	moveRobot(wind,arrowEvents[wind.control.getActionKey_Greedy()]);
+
 
 
 def droneTimerStart(wind):

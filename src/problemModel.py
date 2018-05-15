@@ -69,7 +69,7 @@ class Model:
 		self.setupTransitionLayer(); 
 		self.setupCostLayer(); 
 
-		self.spatialRealtions = {'Inside':0,'South of':4,'West of':1,'North of':2,'East of':3}; 
+		self.spatialRealtions = {'Near':0,'South of':4,'West of':1,'North of':2,'East of':3}; 
 
 		self.sketches = {};
 
@@ -176,7 +176,15 @@ class Model:
 				post.addG(g); 
 			else:
 				change = True; 
-				post.addG(soft.lwisUpdate(g,0,20,inverse=True));
+				tmp = soft.lwisUpdate(g,0,20,inverse=True);
+				#self.bounds = {'low':[0,0],'high':[437,754]}
+				tmp.mean[0] = max(self.bounds['low'][0]+1,tmp.mean[0]); 
+				tmp.mean[1] = max(self.bounds['low'][1]+1,tmp.mean[1]); 
+				tmp.mean[0] = min(self.bounds['high'][0]-1,tmp.mean[0]);
+				tmp.mean[1] = min(self.bounds['high'][1]-1,tmp.mean[1]);  
+
+
+				post.addG(tmp);
 		self.belief = post; 
 		self.belief.normalizeWeights(); 
 
