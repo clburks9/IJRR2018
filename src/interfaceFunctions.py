@@ -154,11 +154,12 @@ def moveRobot(wind,eventKey=None):
 		if(change):
 			pm = makeBeliefMap(wind); 
 			wind.beliefMapWidget.setPixmap(pm);   
-
-	checkEndCondition(wind); 
+	if(wind.TARGET_STATUS=='loose'):
+		checkEndCondition(wind); 
 
 def checkEndCondition(wind):
-	if(distance(wind.trueModel.copPose,wind.trueModel.robPose) < 15):
+	if(distance(wind.trueModel.copPose,wind.trueModel.robPose) < wind.trueModel.ROBOT_VIEW_RADIUS-8):
+		wind.TARGET_STATUS = 'captured'
 		print('End Condition Reached'); 
 		#dialog = QMessageBox('Target Status','Target Captured!'); 
 		dialog = QMessageBox(); 
@@ -275,7 +276,7 @@ def updateModels(wind,name,cost,speed):
 	painter.setFont(QtGui.QFont('Decorative',25)); 
 	painter.drawText(QPointF(centx,centy),name); 
 	pen = QPen(QColor(0,0,0,255)); 
-	pen.setWidth(10);
+	pen.setWidth(wind.sketchDensity*2);
 	painter.setPen(pen); 
 	 
 	for i in range(0,len(vertices)):
@@ -369,21 +370,40 @@ def controlTimerStart(wind):
 
 def controlTimerTimeout(wind):
 	arrowEvents = [QtCore.Qt.Key_Up,QtCore.Qt.Key_Down,QtCore.Qt.Key_Left,QtCore.Qt.Key_Right]; 
-	#moveRobot(wind,arrowEvents[wind.control.getActionKey()]);
+	if(wind.TARGET_STATUS == 'loose'):
 
-	#moveRobot(wind,arrowEvents[wind.control.getActionKey()]);
+		if(wind.CONTROL_TYPE == "MAP"):
+			moveRobot(wind,arrowEvents[wind.control.getActionKey()]);
+		elif(wind.CONTROL_TYPE == "POMCP"):
+			bel = wind.assumedModel.belief; 
+			tmp = "{}\n".format(bel.size)
+			#print(tmp); 
+			wind.control.stdin.write(tmp.encode('utf-8')); 
+			wind.control.stdin.flush(); 
 
-	bel = wind.assumedModel.belief; 
-	mixMean,mixVar = findMixtureParams(bel); 
-	toSend = [wind.assumedModel.copPose[0],wind.assumedModel.copPose[1],mixMean[0],mixMean[1],np.sqrt(mixVar[0][0]),np.sqrt(mixVar[1][1])]; 
-	for t in toSend:
-		tmp = "{}\n".format(t); 
-		wind.control.stdin.write(tmp.encode('utf-8')); 
-		wind.control.stdin.flush(); 
-	#time.sleep(1); 
-	act = int(wind.control.stdout.readline().decode('utf-8')); 
-	#print(act); 
-	moveRobot(wind,arrowEvents[act]); 
+			for g in bel:
+				toSend = [wind.assumedModel.copPose[0],wind.assumedModel.copPose[1],g.mean[0],g.mean[1],np.sqrt(g.var[0][0]),np.sqrt(g.var[1][1]),g.weight]; 
+				#print(toSend); 
+				for t in toSend:
+					tmp = "{}\n".format(t); 
+					wind.control.stdin.write(tmp.encode('utf-8')); 
+					wind.control.stdin.flush(); 
+			#time.sleep(1); 
+			#print("Sent"); 
+			act = "100"; 
+			while(1>0):
+				#print(act); 
+				act = wind.control.stdout.readline().decode('utf-8');
+				#print(len(act)); 
+				try:
+					int(act); 
+					break; 
+				except(ValueError):
+					print(act); 
+					continue; 
+			#print(act); 
+			act = int(act);  
+			moveRobot(wind,arrowEvents[act]); 
 
 
 def findMixtureParams(mixture):

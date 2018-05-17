@@ -45,6 +45,8 @@ class Model:
 		self.ROBOT_NOMINAL_SPEED = 10; 
 		self.TARGET_SIZE_RADIUS = 10; 
 
+		self.MAX_BELIEF_SIZE = 15; 
+
 		self.BREADCRUMB_TRAIL_LENGTH = 100; 
 
 
@@ -55,7 +57,7 @@ class Model:
 			# self.belief.addNewG([400,400],[[1000,0],[0,1000]],1); 
 			# self.belief.addNewG([400,100],[[1000,0],[0,1000]],1); 
 			# self.belief.addNewG([100,400],[[1000,0],[0,1000]],1); 
-			self.belief.addNewG([400,200],[[1000,0],[0,1000]],1); 
+			self.belief.addNewG([400,200],[[1000,0],[0,1000]],.25); 
 			#self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[1000,0],[0,1000]],1); 
 
 			for i in range(0,15):
@@ -164,6 +166,9 @@ class Model:
 					tmp.addGM(soft.runVBND(self.belief,i));
 			tmp.normalizeWeights(); 
 			self.belief=tmp; 
+		if(self.belief.size > self.MAX_BELIEF_SIZE):
+			self.belief.condense(self.MAX_BELIEF_SIZE); 
+			self.belief.normalizeWeights()
 
 
 
@@ -173,7 +178,7 @@ class Model:
 		prev = self.prevPoses[-2]; 
 		theta = np.arctan2([cp[1]-prev[1]],[cp[0]-prev[0]]);
 		#print(theta);  
-		radius = 10; 
+		radius = self.ROBOT_VIEW_RADIUS; 
 		points = [[cp[0]-radius,cp[1]-radius],[cp[0]+radius,cp[1]-radius],[cp[0]+radius,cp[1]+radius],[cp[0]-radius,cp[1]+radius]]; 
 		soft = Softmax()
 		soft.buildPointsModel(points,steepness=1);
@@ -181,7 +186,7 @@ class Model:
 		change = False; 
 		post = GM(); 
 		for g in self.belief:
-			if(distance(cp,g.mean) > 20):
+			if(distance(cp,g.mean) > self.ROBOT_VIEW_RADIUS):
 				post.addG(g); 
 			else:
 				change = True; 

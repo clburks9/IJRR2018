@@ -66,15 +66,10 @@ class SimulationWindow(QWidget):
 		self.setLayout(self.layout); 
 
 
-		#Make Models and Controller
+		#Make Models
 		self.trueModel = Model(trueModel=True);
 		self.assumedModel = Model(trueModel=False); 
-		#self.control = Controller(self.assumedModel); 
-		#self.control = JuliaController(self.assumedModel); 
-		#self.control = OnlineSolver(self.assumedModel); 
-		#self.control = subprocess.Popen(['python','juliaBridge.py'],bufsize=0,stdin=subprocess.PIPE); 
-		self.control = sp.Popen(['python','-u','juliaBridge.py'],stdin = sp.PIPE,stdout = sp.PIPE)
-
+		self.TARGET_STATUS = 'loose'; 
 
 		self.makeBreadCrumbColors(); 
 
@@ -86,8 +81,8 @@ class SimulationWindow(QWidget):
 		self.allSketchPaths = []; 
 		self.allSketchPlanes = {}; 
 		self.sketchLabels = {}; 
-		self.sketchDensity = 5; 
-		self.NUM_SKETCH_POINTS = 4; 
+		self.sketchDensity = 3; #radius in pixels of drawn sketch points
+		self.NUM_SKETCH_POINTS = 4; #Number of points kept 
 
 		#Drone Params
 		self.droneClickListen = False; 
@@ -96,8 +91,14 @@ class SimulationWindow(QWidget):
 		self.DRONE_VIEW_RADIUS = 75; 
 
 		#Controller Paramas
-		self.humanControl = False; 
-		self.CONTROL_FREQUENCY = 10; #Hz
+		self.CONTROL_FREQUENCY = 5; #Hz
+		self.CONTROL_TYPE = "POMCP";  #Human,MAP,POMCP
+		
+		if(self.CONTROL_TYPE == "MAP"):
+			self.control = Controller(self.assumedModel); 
+		elif(self.CONTROL_TYPE == "POMCP"):		
+			self.control = sp.Popen(['python','-u','juliaBridge.py'],stdin = sp.PIPE,stdout = sp.PIPE,stderr=sp.STDOUT)
+
 
 
 		self.makeMapGraphics();
@@ -111,12 +112,11 @@ class SimulationWindow(QWidget):
 		self.makeTarget();
 
 
-
 		loadQuestions(self); 
 
 		droneTimerStart(self); 
 
-		if(not self.humanControl):
+		if(self.CONTROL_TYPE != "Human"):
 			controlTimerStart(self); 
 
 		self.show()
@@ -128,12 +128,12 @@ class SimulationWindow(QWidget):
 
 		for i in range(0,num_crumbs):
 			alpha = 255*(i)/num_crumbs; 
-			self.breadColors.append(QColor(150,0,0,alpha))
+			self.breadColors.append(QColor(255,0,0,alpha))
 
 
 	def keyReleaseEvent(self,event):
 		arrowEvents = [QtCore.Qt.Key_Up,QtCore.Qt.Key_Down,QtCore.Qt.Key_Left,QtCore.Qt.Key_Right]; 
-		if(self.humanControl):
+		if(self.CONTROL_TYPE=='Human'):
 			if(event.key() in arrowEvents):
 				moveRobot(self,event.key()); 
 			if(event.key() == QtCore.Qt.Key_Space):

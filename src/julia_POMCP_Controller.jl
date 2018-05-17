@@ -6,7 +6,7 @@ type D4ICRA <: POMDPs.POMDP{Float64,Int,Int}
 	step_size::Int64
 end
 
-
+rand(rng::AbstractRNG, d::Distributions.MixtureModel{Distributions.Multivariate,Distributions.Continuous,Distributions.MvNormal}) = rand(d);
 
 #2second = 50000 or maybe 1 second? 
 
@@ -17,7 +17,7 @@ function makeSolver()
 	actions(::D4ICRA) = [0,1,2,3]
 	n_actions(::D4ICRA) = 4
 	pomdp = D4ICRA(0.9,1); 
-	solver = POMCPSolver(tree_queries=20000, c=10)
+	solver = POMCPSolver(tree_queries=30000, c=10)
 	#solver = POMCPSolver()
 	planner = solve(solver, pomdp);
 
@@ -86,11 +86,22 @@ end;
 
 
 function makeDist(cp0,cp1,mmean0,mmean1,cov0,cov1)
-	mean_0 = [cp0,cp1,mmean0,mmean1]; 
-	sig_0 = [10.,10.,cov0,cov1]
-	return MvNormal(mean_0,sig_0); 
+		mean_0 = [cp0,cp1,mmean0,mmean1]; 
+		sig_0 = [10.,10.,cov0,cov1]
+		return MvNormal(mean_0,sig_0); 
 end
 
+function makeMixtureDist(cp0,cp1,mmean0,mmean1,cov0,cov1,weights)
+	#println(weights);
+	mixands = MvNormal[];
+	for i=1:length(cp0)
+		tmp = MvNormal([cp0[i],cp1[i],mmean0[i],mmean1[i]],[10.,10.,cov0[i],cov1[i]])
+		push!(mixands,tmp); 
+	end
+
+	return MixtureModel(mixands,weights); 
+
+end
 
 using BasicPOMCP
 using POMDPToolbox
