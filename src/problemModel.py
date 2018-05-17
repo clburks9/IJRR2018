@@ -42,7 +42,7 @@ class Model:
 
 		self.ROBOT_VIEW_RADIUS = 25; 
 		self.ROBOT_SIZE_RADIUS = 10; 
-		self.ROBOT_NOMINAL_SPEED = 2; 
+		self.ROBOT_NOMINAL_SPEED = 10; 
 		self.TARGET_SIZE_RADIUS = 10; 
 
 		self.BREADCRUMB_TRAIL_LENGTH = 100; 
@@ -55,7 +55,7 @@ class Model:
 			# self.belief.addNewG([400,400],[[1000,0],[0,1000]],1); 
 			# self.belief.addNewG([400,100],[[1000,0],[0,1000]],1); 
 			# self.belief.addNewG([100,400],[[1000,0],[0,1000]],1); 
-			# self.belief.addNewG([400,200],[[1000,0],[0,1000]],1); 
+			self.belief.addNewG([400,200],[[1000,0],[0,1000]],1); 
 			#self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[1000,0],[0,1000]],1); 
 
 			for i in range(0,15):
@@ -143,7 +143,7 @@ class Model:
 		pz.buildPointsModel(vertices,steepness=2); 
 		self.sketches[name] = pz; 
 
-	def stateObsUpdate(self,name,relation):
+	def stateObsUpdate(self,name,relation,pos="Is"):
 		if(name == 'You'):
 			#Take Cops Position, builid box around it
 			cp=self.copPose; 
@@ -154,8 +154,17 @@ class Model:
 			soft = self.sketches[name]; 
 		softClass = self.spatialRealtions[relation]; 
 
-		self.belief = soft.runVBND(self.belief,softClass); 
-		self.belief.normalizeWeights(); 
+		if(pos=="Is"):
+			self.belief = soft.runVBND(self.belief,softClass); 
+			self.belief.normalizeWeights(); 
+		else:
+			tmp = GM();
+			for i in range(0,5):
+				if(i!=softClass):
+					tmp.addGM(soft.runVBND(self.belief,i));
+			tmp.normalizeWeights(); 
+			self.belief=tmp; 
+
 
 
 	def stateLWISUpdate(self):

@@ -38,6 +38,9 @@ from shapely.geometry import Polygon,Point
 import shapely
 from copy import copy,deepcopy
 
+from MCTS import OnlineSolver
+
+
 def makeBeliefMap(wind):
 	[x,y,c] = wind.assumedModel.belief.plot2D(low=[0,0],high=[wind.imgWidth,wind.imgHeight],vis=False);
 	sp = SubplotParams(left=0.,bottom=0.,right=1.,top=1.); 
@@ -366,7 +369,37 @@ def controlTimerStart(wind):
 
 def controlTimerTimeout(wind):
 	arrowEvents = [QtCore.Qt.Key_Up,QtCore.Qt.Key_Down,QtCore.Qt.Key_Left,QtCore.Qt.Key_Right]; 
-	moveRobot(wind,arrowEvents[wind.control.getActionKey_Greedy()]);
+	#moveRobot(wind,arrowEvents[wind.control.getActionKey()]);
+
+	#moveRobot(wind,arrowEvents[wind.control.getActionKey()]);
+
+	bel = wind.assumedModel.belief; 
+	mixMean,mixVar = findMixtureParams(bel); 
+	toSend = [wind.assumedModel.copPose[0],wind.assumedModel.copPose[1],mixMean[0],mixMean[1],np.sqrt(mixVar[0][0]),np.sqrt(mixVar[1][1])]; 
+	for t in toSend:
+		tmp = "{}\n".format(t); 
+		wind.control.stdin.write(tmp.encode('utf-8')); 
+		wind.control.stdin.flush(); 
+	#time.sleep(1); 
+	act = int(wind.control.stdout.readline().decode('utf-8')); 
+	#print(act); 
+	moveRobot(wind,arrowEvents[act]); 
+
+
+def findMixtureParams(mixture):
+
+	#mean is a weighted average of means
+	mixMean = np.zeros(2);
+	for g in mixture:
+		mixMean += np.array(g.mean)*g.weight; 
+
+	#Variance is the weighted sum of variances plus the weighted sum of outer products of the difference of the mean and mixture mean
+	mixVar = np.zeros(shape=(2,2)); 
+	for g in mixture:
+		mixVar += np.matrix(g.var)*g.weight; 
+		mixVar += (np.matrix(g.mean)-np.matrix(mixMean)).T*(np.matrix(g.mean)-np.matrix(mixMean))*g.weight; 
+
+	return mixMean,mixVar;
 
 
 
@@ -433,8 +466,9 @@ def loadQuestions(wind):
 def pushButtonPressed(wind):
 	rel = str(wind.relationsDrop.currentText()) 
 	name = str(wind.objectsDrop.currentText());
+	pos = str(wind.positivityDrop.currentText());
 
-	wind.assumedModel.stateObsUpdate(name,rel); 
+	wind.assumedModel.stateObsUpdate(name,rel,pos); 
 
 	pm = makeBeliefMap(wind); 
 	wind.beliefMapWidget.setPixmap(pm); 

@@ -27,7 +27,7 @@ class Controller:
 
 
 
-	def getActionKey_Greedy(self):
+	def getActionKey(self):
 		goal = self.model.belief.findMAPN(); 
 		pose = self.model.copPose; 
 

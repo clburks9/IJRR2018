@@ -31,10 +31,14 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import *; 
 from PyQt5.QtGui import *;
 from PyQt5.QtCore import *;
-import sys
+import sys,os
 
 import numpy as np
 import time
+
+import julia
+from threading import Thread
+import subprocess as sp
 
 from matplotlib.backends.backend_qt4agg import FigureCanvas
 from matplotlib.figure import Figure, SubplotParams
@@ -44,16 +48,19 @@ from interfaceFunctions import *;
 from planeFunctions import *;
 from problemModel import Model
 from robotControllers import Controller; 
+from juliaController import JuliaController
+
+from MCTS import OnlineSolver;
 
 class SimulationWindow(QWidget):
 	def __init__(self):
 
 		super(SimulationWindow,self).__init__()
-		self.setGeometry(1,1,1250,800)
+		self.setGeometry(1,1,1350,800)
 		self.layout = QGridLayout(); 
 		self.layout.setColumnStretch(0,2); 
 		self.layout.setColumnStretch(1,2);
-		# self.layout.setColumnStretch(2,1); 
+		#self.layout.setColumnStretch(2,.1); 
 		# self.layout.setColumnStretch(3,1);
 		# self.layout.setColumnStretch(4,1);
 		self.setLayout(self.layout); 
@@ -62,7 +69,13 @@ class SimulationWindow(QWidget):
 		#Make Models and Controller
 		self.trueModel = Model(trueModel=True);
 		self.assumedModel = Model(trueModel=False); 
-		self.control = Controller(self.assumedModel); 
+		#self.control = Controller(self.assumedModel); 
+		#self.control = JuliaController(self.assumedModel); 
+		#self.control = OnlineSolver(self.assumedModel); 
+		#self.control = subprocess.Popen(['python','juliaBridge.py'],bufsize=0,stdin=subprocess.PIPE); 
+		self.control = sp.Popen(['python','-u','juliaBridge.py'],stdin = sp.PIPE,stdout = sp.PIPE)
+
+
 		self.makeBreadCrumbColors(); 
 
 		#Sketching Params
@@ -194,17 +207,17 @@ class SimulationWindow(QWidget):
 
 		#Transitions Map
 		#************************************************************
-		# self.assumedModel.transitionLayer = convertPixmapToGrayArray(self.fogPlane.pixmap()); 
-		# self.assumedModel.transitionLayer /= 255.0;
-		# self.assumedModel.transitionLayer = np.amax(self.assumedModel.transitionLayer)  - self.assumedModel.transitionLayer; 
-		# self.assumedModel.transitionLayer *= 15.0;
-		# self.assumedModel.transitionLayer -= 10.0; 
+		self.assumedModel.transitionLayer = convertPixmapToGrayArray(self.fogPlane.pixmap()); 
+		self.assumedModel.transitionLayer /= 255.0;
+		self.assumedModel.transitionLayer = np.amax(self.assumedModel.transitionLayer)  - self.assumedModel.transitionLayer; 
+		self.assumedModel.transitionLayer *= 15.0;
+		self.assumedModel.transitionLayer -= 10.0; 
 
-		# self.trueModel.transitionLayer = convertPixmapToGrayArray(self.truePlane.pixmap());
-		# self.trueModel.transitionLayer /= 255.0;
-		# self.trueModel.transitionLayer = np.amax(self.trueModel.transitionLayer) - self.trueModel.transitionLayer; 
-		# self.trueModel.transitionLayer *= 15.0;
-		# self.trueModel.transitionLayer -= 10.0; 
+		self.trueModel.transitionLayer = convertPixmapToGrayArray(self.truePlane.pixmap());
+		self.trueModel.transitionLayer /= 255.0;
+		self.trueModel.transitionLayer = np.amax(self.trueModel.transitionLayer) - self.trueModel.transitionLayer; 
+		self.trueModel.transitionLayer *= 15.0;
+		self.trueModel.transitionLayer -= 10.0; 
 
 		self.transMapWidget_true = QLabel(); 
 		tm = makeModelMap(self,self.trueModel.transitionLayer); 
@@ -299,13 +312,18 @@ class SimulationWindow(QWidget):
 		pushLabel.setFont(sectionHeadingFont);
 		self.layout.addWidget(pushLabel,6,2); 
 
+		self.positivityDrop = QComboBox(); 
+		self.positivityDrop.addItem("Is"); 
+		self.positivityDrop.addItem("Is not"); 
+		self.layout.addWidget(self.positivityDrop,7,2); 
+
 		self.relationsDrop = QComboBox();
 		self.relationsDrop.addItem("Near"); 
 		self.relationsDrop.addItem("North of"); 
 		self.relationsDrop.addItem("South of");
 		self.relationsDrop.addItem("East of");
 		self.relationsDrop.addItem("West of");
-		self.layout.addWidget(self.relationsDrop,7,2); 
+		self.layout.addWidget(self.relationsDrop,7,3); 
 
 		self.objectsDrop = QComboBox();
 		# self.objectsDrop.addItem("Sand"); 
@@ -313,11 +331,11 @@ class SimulationWindow(QWidget):
 		# self.objectsDrop.addItem("ROUS");
 		# self.objectsDrop.addItem("Trees 2");
 		self.objectsDrop.addItem("You"); 
-		self.layout.addWidget(self.objectsDrop,7,3); 
+		self.layout.addWidget(self.objectsDrop,7,4); 
 
 		self.pushButton = QPushButton("Submit"); 
 		self.pushButton.setStyleSheet("background-color: green"); 
-		self.layout.addWidget(self.pushButton,7,4); 
+		self.layout.addWidget(self.pushButton,7,5); 
 
 
 		#Drone Launch Section
@@ -381,7 +399,12 @@ class SimulationWindow(QWidget):
 		np.save('../models/trueTransitions.npy',self.assumedModel.transitionLayer); 
 		print("Saved Transition Model");
 
+
+
 if __name__ == '__main__':
+
 	app = QApplication(sys.argv); 
 	ex = SimulationWindow(); 
 	sys.exit(app.exec_()); 
+
+
