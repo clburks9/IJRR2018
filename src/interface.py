@@ -66,9 +66,10 @@ class SimulationWindow(QWidget):
 		self.setLayout(self.layout); 
 
 
+
 		#Make Models
 		self.trueModel = Model(trueModel=True);
-		self.assumedModel = Model(trueModel=False); 
+		self.assumedModel = Model(trueModel=False,belModel = 0); 
 		self.TARGET_STATUS = 'loose'; 
 
 		self.makeBreadCrumbColors(); 
@@ -92,7 +93,7 @@ class SimulationWindow(QWidget):
 
 		#Controller Paramas
 		self.CONTROL_FREQUENCY = 5; #Hz
-		self.CONTROL_TYPE = "POMCP";  #Human,MAP,POMCP
+		self.CONTROL_TYPE = "Human";  #Human,MAP,POMCP
 		
 		if(self.CONTROL_TYPE == "MAP"):
 			self.control = Controller(self.assumedModel); 
@@ -100,6 +101,10 @@ class SimulationWindow(QWidget):
 			self.control = sp.Popen(['python','-u','juliaBridge.py'],stdin = sp.PIPE,stdout = sp.PIPE,stderr=sp.STDOUT)
 
 
+		#DATA COLLECTION
+		self.lastPush = []; 
+		#self.SAVE_STATUS = True; 
+		self.SAVE_FILE = '../data/{}_{}'.format(self.CONTROL_TYPE,time.asctime().replace(' ','').replace(':','_')); 
 
 		self.makeMapGraphics();
 
@@ -213,11 +218,21 @@ class SimulationWindow(QWidget):
 		self.assumedModel.transitionLayer *= 15.0;
 		self.assumedModel.transitionLayer -= 10.0; 
 
+		# plt.figure(figsize = (4.3,7.5));  
+		# plt.contourf(np.flipud(np.amax(self.assumedModel.transitionLayer)-np.transpose(self.assumedModel.transitionLayer)),cmap='seismic'); 
+		# plt.axis('off'); 
+		# plt.savefig('../img/assumed_Transitions.pdf',format='pdf',dpi=1000,bbox_inches='tight'); 
+
 		self.trueModel.transitionLayer = convertPixmapToGrayArray(self.truePlane.pixmap());
 		self.trueModel.transitionLayer /= 255.0;
 		self.trueModel.transitionLayer = np.amax(self.trueModel.transitionLayer) - self.trueModel.transitionLayer; 
 		self.trueModel.transitionLayer *= 15.0;
 		self.trueModel.transitionLayer -= 10.0; 
+
+		# plt.figure(figsize = (4.3,7.5)); 
+		# plt.contourf(np.flipud(np.amax(self.assumedModel.transitionLayer)-np.transpose(self.trueModel.transitionLayer)),cmap='seismic'); 
+		# plt.axis('off'); 
+		# plt.savefig('../img/true_Transitions.pdf',format='pdf',dpi=1000,bbox_inches='tight'); 
 
 		self.transMapWidget_true = QLabel(); 
 		tm = makeModelMap(self,self.trueModel.transitionLayer); 
@@ -391,15 +406,18 @@ class SimulationWindow(QWidget):
 		self.imageScene.mouseReleaseEvent = lambda event:imageMouseRelease(event,self);
 
 
-		self.saveShortcut = QShortcut(QKeySequence("Ctrl+S"),self); 
-		self.saveShortcut.activated.connect(self.saveTransitions); 
+		self.saveShortcut = QShortcut(QKeySequence("Ctrl+B"),self); 
+		self.saveShortcut.activated.connect(self.saveBeliefs); 
 
+		self.saveAllShortcut = QShortcut(QKeySequence("Ctrl+A"),self); 
+		self.saveAllShortcut.activated.connect(self.saveAllThings);
 
-	def saveTransitions(self):
-		np.save('../models/trueTransitions.npy',self.assumedModel.transitionLayer); 
-		print("Saved Transition Model");
+	def saveBeliefs(self):
+		np.save('../models/beliefs.npy',[self.assumedModel.belief]); 
+		print("Saved Current Belief");
 
-
+	def saveAllThings(self):
+		print("Saving Things"); 
 
 if __name__ == '__main__':
 

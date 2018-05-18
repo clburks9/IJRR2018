@@ -33,7 +33,7 @@ from interfaceFunctions import distance
 
 class Model:
 
-	def __init__(self,size = [437,754],trueModel = False):
+	def __init__(self,size = [437,754],trueModel = False,belModel = None):
 
 		self.truth = trueModel
 
@@ -49,20 +49,24 @@ class Model:
 
 		self.BREADCRUMB_TRAIL_LENGTH = 100; 
 
+		self.history = {'beliefs':[],'positions':[],'sketches':{},'humanObs':[]}; 
 
 		#Make Target or Belief
 		if(not self.truth):
-			self.belief = GM(); 
-			# self.belief.addNewG([100,100],[[1000,0],[0,1000]],1); 
-			# self.belief.addNewG([400,400],[[1000,0],[0,1000]],1); 
-			# self.belief.addNewG([400,100],[[1000,0],[0,1000]],1); 
-			# self.belief.addNewG([100,400],[[1000,0],[0,1000]],1); 
-			self.belief.addNewG([400,200],[[1000,0],[0,1000]],.25); 
-			#self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[1000,0],[0,1000]],1); 
+			if(belModel is None):
+				self.belief = GM(); 
+				# self.belief.addNewG([100,100],[[1000,0],[0,1000]],1); 
+				# self.belief.addNewG([400,400],[[1000,0],[0,1000]],1); 
+				# self.belief.addNewG([400,100],[[1000,0],[0,1000]],1); 
+				# self.belief.addNewG([100,400],[[1000,0],[0,1000]],1); 
+				self.belief.addNewG([400,200],[[1000,0],[0,1000]],.25); 
+				#self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[1000,0],[0,1000]],1); 
 
-			for i in range(0,15):
-				self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[1000,0],[0,1000]],np.random.random()); 
-			self.belief.normalizeWeights(); 
+				for i in range(0,15):
+					self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[2000+500*np.random.normal(),0],[0,2000+500*np.random.normal()]],np.random.random()); 
+				self.belief.normalizeWeights(); 
+			else:
+				self.belief = np.load("../models/beliefs{}.npy".format(belModel))[0]
 		else:
 			self.robPose = [400,200];
 		
@@ -132,7 +136,6 @@ class Model:
 
 
 
-
 	def distance(self,x,y):
 		return np.sqrt((x[0]-y[0])**2 + (x[1]-y[1])**2); 
 
@@ -186,7 +189,7 @@ class Model:
 		change = False; 
 		post = GM(); 
 		for g in self.belief:
-			if(distance(cp,g.mean) > self.ROBOT_VIEW_RADIUS):
+			if(distance(cp,g.mean) > self.ROBOT_VIEW_RADIUS+5):
 				post.addG(g); 
 			else:
 				change = True; 

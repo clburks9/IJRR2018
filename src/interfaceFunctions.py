@@ -42,6 +42,8 @@ from MCTS import OnlineSolver
 
 
 def makeBeliefMap(wind):
+	#print(wind.assumedModel.belief); 
+	#wind.assumedModel.belief.display()
 	[x,y,c] = wind.assumedModel.belief.plot2D(low=[0,0],high=[wind.imgWidth,wind.imgHeight],vis=False);
 	sp = SubplotParams(left=0.,bottom=0.,right=1.,top=1.); 
 	fig = Figure(subplotpars=sp); 
@@ -156,6 +158,27 @@ def moveRobot(wind,eventKey=None):
 			wind.beliefMapWidget.setPixmap(pm);   
 	if(wind.TARGET_STATUS=='loose'):
 		checkEndCondition(wind); 
+
+	if(wind.SAVE_FILE is not None):
+		updateSavedModel(wind); 
+
+
+def updateSavedModel(wind):
+	mod = wind.assumedModel; 
+
+	mod.history['beliefs'].append(mod.belief);
+	mod.history['positions'].append(mod.copPose); 
+	mod.history['sketches'] = mod.sketches; 
+
+	if(len(wind.lastPush) > 0):
+		mod.history['humanObs'].append(wind.lastPush); 
+		wind.lastPush = [];
+	else:
+		mod.history['humanObs'].append([]); 
+
+	np.save(wind.SAVE_FILE,mod.history); 
+
+
 
 def checkEndCondition(wind):
 	if(distance(wind.trueModel.copPose,wind.trueModel.robPose) < wind.trueModel.ROBOT_VIEW_RADIUS-8):
@@ -492,3 +515,7 @@ def pushButtonPressed(wind):
 
 	pm = makeBeliefMap(wind); 
 	wind.beliefMapWidget.setPixmap(pm); 
+
+	wind.lastPush = [pos,rel,name]; 
+
+
