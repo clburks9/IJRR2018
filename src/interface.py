@@ -65,11 +65,14 @@ class SimulationWindow(QWidget):
 		# self.layout.setColumnStretch(4,1);
 		self.setLayout(self.layout); 
 
-
+		#Data Taking Params
+		beliefType = 1; 
+		pushing = "NO"; #NO, MEH, GOOD
+		self.CONTROL_TYPE = "MAP";  #Human,MAP,POMCP
 
 		#Make Models
 		self.trueModel = Model(trueModel=True);
-		self.assumedModel = Model(trueModel=False,belModel = 0); 
+		self.assumedModel = Model(trueModel=False,belModel = beliefType); 
 		self.TARGET_STATUS = 'loose'; 
 
 		self.makeBreadCrumbColors(); 
@@ -93,7 +96,6 @@ class SimulationWindow(QWidget):
 
 		#Controller Paramas
 		self.CONTROL_FREQUENCY = 5; #Hz
-		self.CONTROL_TYPE = "Human";  #Human,MAP,POMCP
 		
 		if(self.CONTROL_TYPE == "MAP"):
 			self.control = Controller(self.assumedModel); 
@@ -104,7 +106,7 @@ class SimulationWindow(QWidget):
 		#DATA COLLECTION
 		self.lastPush = []; 
 		#self.SAVE_STATUS = True; 
-		self.SAVE_FILE = '../data/{}_{}'.format(self.CONTROL_TYPE,time.asctime().replace(' ','').replace(':','_')); 
+		self.SAVE_FILE = '../data/{}_bel{}_{}'.format(self.CONTROL_TYPE,beliefType,pushing,time.asctime().replace(' ','').replace(':','_')); 
 
 		self.makeMapGraphics();
 
@@ -215,8 +217,8 @@ class SimulationWindow(QWidget):
 		self.assumedModel.transitionLayer = convertPixmapToGrayArray(self.fogPlane.pixmap()); 
 		self.assumedModel.transitionLayer /= 255.0;
 		self.assumedModel.transitionLayer = np.amax(self.assumedModel.transitionLayer)  - self.assumedModel.transitionLayer; 
-		self.assumedModel.transitionLayer *= 15.0;
-		self.assumedModel.transitionLayer -= 10.0; 
+		self.assumedModel.transitionLayer *= 10.0;
+		self.assumedModel.transitionLayer -= 5.0; 
 
 		# plt.figure(figsize = (4.3,7.5));  
 		# plt.contourf(np.flipud(np.amax(self.assumedModel.transitionLayer)-np.transpose(self.assumedModel.transitionLayer)),cmap='seismic'); 
@@ -226,8 +228,8 @@ class SimulationWindow(QWidget):
 		self.trueModel.transitionLayer = convertPixmapToGrayArray(self.truePlane.pixmap());
 		self.trueModel.transitionLayer /= 255.0;
 		self.trueModel.transitionLayer = np.amax(self.trueModel.transitionLayer) - self.trueModel.transitionLayer; 
-		self.trueModel.transitionLayer *= 15.0;
-		self.trueModel.transitionLayer -= 10.0; 
+		self.trueModel.transitionLayer *= 10.0;
+		self.trueModel.transitionLayer -= 5.0; 
 
 		# plt.figure(figsize = (4.3,7.5)); 
 		# plt.contourf(np.flipud(np.amax(self.assumedModel.transitionLayer)-np.transpose(self.trueModel.transitionLayer)),cmap='seismic'); 

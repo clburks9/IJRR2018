@@ -176,7 +176,7 @@ def updateSavedModel(wind):
 	else:
 		mod.history['humanObs'].append([]); 
 
-	np.save(wind.SAVE_FILE,mod.history); 
+	np.save(wind.SAVE_FILE,[mod.history]); 
 
 
 
