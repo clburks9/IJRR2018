@@ -14,7 +14,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2018"
 __credits__ = ["Luke Burks"]
 __license__ = "GPL"
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -38,31 +38,10 @@ from shapely.geometry import Polygon,Point
 import shapely
 from copy import copy,deepcopy
 
-from MCTS import OnlineSolver
 
-
-
-
-def addFinalPath(wind,control,pushing,belnum):
-	fileName = '../data/{}_bel{}_{}.npy'.format(control,belnum,pushing); 
-
-	data = np.load(fileName);
-	data = data[0]; 
-	poses = data['positions']; 
-
-	pen = QPen(QColor(0,0,0,255)); 
-	pen.setWidth(5); 
-
-	print(poses);
-
-	defog(wind,poses); 
-	planeFlushPaint(wind.robotPlane,poses,QColor(0,255,0,255)); 
-
-
-
+#Converts a gaussian mixture belief to an image in the belief tab
 def makeBeliefMap(wind):
-	#print(wind.assumedModel.belief); 
-	#wind.assumedModel.belief.display()
+
 	[x,y,c] = wind.assumedModel.belief.plot2D(low=[0,0],high=[wind.imgWidth,wind.imgHeight],vis=False);
 	sp = SubplotParams(left=0.,bottom=0.,right=1.,top=1.); 
 	fig = Figure(subplotpars=sp); 
@@ -75,24 +54,18 @@ def makeBeliefMap(wind):
 	width,height = size.width(),size.height(); 
 
 	im = QImage(canvas.buffer_rgba(),width,height,QtGui.QImage.Format_RGB32); 
-	#im = im.mirrored(horizontal = True); 
 	im = im.mirrored(vertical=True);
 
 	pm = QPixmap(im); 
 	pm = pm.scaled(wind.imgWidth,wind.imgHeight); 
 	return pm; 
 
-
+#Converts a transition or cost model to an image
 def makeModelMap(wind,layer):
 	sp = SubplotParams(left=0.,bottom=0.,right=1.,top=1.); 
 	fig = Figure(subplotpars=sp); 
 	canvas = FigureCanvas(fig); 
 	ax = fig.add_subplot(111); 
-	#vmax = np.amax(layer)+1; 
-	#vmin = np.amin(layer)-1; 
-	#print(np.amax(layer),np.amin(layer)); 
-	#levels = np.arange(vmin,vmax); 
-	#ax.contourf(np.transpose(layer),cmap='seismic',levels=levels); 
 	ax.contourf(np.transpose(layer),cmap='seismic',vmin=-10,vmax=10);
 	ax.set_axis_off(); 
 
@@ -100,7 +73,6 @@ def makeModelMap(wind,layer):
 	size=canvas.size(); 
 	width,height = size.width(),size.height(); 
 	im = QImage(canvas.buffer_rgba(),width,height,QtGui.QImage.Format_ARGB32); 
-	#im = im.mirrored(horizontal = True); 
 	im = im.mirrored(vertical=True);
 
 	pm = QPixmap(im); 
@@ -119,17 +91,12 @@ def convertPixmapToGrayArray(pm):
 	return np.amax(gray)-gray.T; 
 
 
-def moveRobot(wind,eventKey=None):
-	#print("Key Pressed: {}".format(event.key())); 
+def moveRobot(wind,eventKey=None): 
 
 	#place the breadcrumbs
-	#put green mark on place it has been, remove oldest place if above length of trail
-	pen = QPen(QColor(0,150,0,255)); 
-	pen.setWidth(5); 
 	wind.trueModel.prevPoses.append(copy(wind.trueModel.copPose)); 
 	if(len(wind.trueModel.prevPoses) > wind.trueModel.BREADCRUMB_TRAIL_LENGTH):
 		wind.trueModel.prevPoses = wind.trueModel.prevPoses[1:];  
-	#planeFlushPaint(wind.trailLayer,wind.trueModel.prevPoses,pen=pen); 
 	planeFlushColors(wind.trailLayer,wind.trueModel.prevPoses,wind.breadColors); 
 
 
@@ -168,7 +135,6 @@ def moveRobot(wind,eventKey=None):
 	wind.assumedModel.prevPoses = wind.trueModel.prevPoses; 
 
 	movementViewChanges(wind);
-	#movementBeliefChanges(wind);
 
 	if(len(wind.assumedModel.prevPoses) > 1):
 		change = wind.assumedModel.stateLWISUpdate(); 
@@ -203,11 +169,9 @@ def checkEndCondition(wind):
 	if(distance(wind.trueModel.copPose,wind.trueModel.robPose) < wind.trueModel.ROBOT_VIEW_RADIUS-8):
 		wind.TARGET_STATUS = 'captured'
 		print('End Condition Reached'); 
-		#dialog = QMessageBox('Target Status','Target Captured!'); 
 		dialog = QMessageBox(); 
 		dialog.setText('Target Captured!'); 
 		dialog.exec_(); 
-		#wind.destroy(); 
 
 def movementViewChanges(wind):
 
@@ -217,7 +181,6 @@ def movementViewChanges(wind):
 
 	for i in range(-int(rad/2)+wind.trueModel.copPose[0],int(rad/2)+wind.trueModel.copPose[0]):
 		for j in range(-int(rad/2) + wind.trueModel.copPose[1],int(rad/2)+wind.trueModel.copPose[1]):
-			#if(i>0 and j>0 and i<wind.trueModel.imgHeight and j<wind.trueModel.imgWidth):
 			tmp1 = min(wind.imgWidth-1,max(0,i)); 
 			tmp2 = min(wind.imgHeight-1,max(0,j)); 
 			points.append([tmp1,tmp2]); 
@@ -227,7 +190,6 @@ def movementViewChanges(wind):
 	rad = wind.trueModel.ROBOT_SIZE_RADIUS; 
 	for i in range(-int(rad/2)+wind.trueModel.copPose[0],int(rad/2)+wind.trueModel.copPose[0]):
 		for j in range(-int(rad/2) + wind.trueModel.copPose[1],int(rad/2)+wind.trueModel.copPose[1]):
-			#if(i>0 and j>0 and i<wind.trueModel.imgHeight and j<wind.trueModel.imgWidth):
 			tmp1 = min(wind.imgWidth-1,max(0,i)); 
 			tmp2 = min(wind.imgHeight-1,max(0,j)); 
 			points.append([tmp1,tmp2]); 
@@ -235,9 +197,6 @@ def movementViewChanges(wind):
 
 	planeFlushPaint(wind.robotPlane,points,QColor(0,255,0,255)); 
 
-
-def movementBeliefChanges(wind):
-	pass; 
 
 
 def startSketch(wind):
@@ -255,7 +214,6 @@ def imageMousePress(QMouseEvent,wind):
 		wind.sketchingInProgress = True; 
 		name = wind.sketchName.text(); 
 		if(name not in wind.allSketchPlanes.keys()):
-			#wind.allSketchPlanes[name] = makeTransparentPlane(wind); 
 			wind.allSketchPlanes[name] = wind.imageScene.addPixmap(makeTransparentPlane(wind));
 			wind.objectsDrop.addItem(name);
 			wind.allSketchNames.append(name); 
@@ -279,8 +237,6 @@ def imageMouseMove(QMouseEvent,wind):
 def imageMouseRelease(QMouseEvent,wind):
 
 	if(wind.sketchingInProgress):
-		#make shape
-		#add name to list
 		tmp = wind.sketchName.text(); 
 		wind.sketchName.clear();
 		wind.sketchName.setPlaceholderText("Sketch Name");
@@ -410,6 +366,8 @@ def controlTimerStart(wind):
 	wind.controlTimer.timeout.connect(lambda: controlTimerTimeout(wind)); 
 	wind.controlTimer.start((1/wind.CONTROL_FREQUENCY)*1000); 
 
+
+#TODO: Change this behavior to call control  behavior of specific controllers
 def controlTimerTimeout(wind):
 	arrowEvents = [QtCore.Qt.Key_Up,QtCore.Qt.Key_Down,QtCore.Qt.Key_Left,QtCore.Qt.Key_Right]; 
 	if(wind.TARGET_STATUS == 'loose'):
@@ -517,7 +475,7 @@ def getNewRobotPullQuestion(wind):
 	wind.pullQuestion.setText(np.random.choice(wind.questions)); 
 
 
-
+#TODO: Map in actual robot questions
 def loadQuestions(wind):
 	f = open('../data/Questions.txt','r'); 
 	lines = f.read().split("\n"); 

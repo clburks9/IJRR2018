@@ -13,7 +13,7 @@ Using Model-View-Controller Architecture
 Version History (Sort of):
 0.1.1: added robot movement
 0.1.2: added automatic robot movement
-
+0.2.0: added POMCP control, data collection, yaml config
 ***********************************************************
 """
 
@@ -21,7 +21,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2018"
 __credits__ = ["Luke Burks"]
 __license__ = "GPL"
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -35,9 +35,9 @@ import sys,os
 
 import numpy as np
 import time
+import yaml
 
 import julia
-from threading import Thread
 import subprocess as sp
 
 from matplotlib.backends.backend_qt4agg import FigureCanvas
@@ -50,12 +50,15 @@ from problemModel import Model
 from robotControllers import Controller; 
 from juliaController import JuliaController
 
-from MCTS import OnlineSolver;
 
 class SimulationWindow(QWidget):
-	def __init__(self):
+
+	def __init__(self,cf):
 
 		super(SimulationWindow,self).__init__()
+		with open(cf,'r') as stream:
+			self.params = yaml.load(stream); 
+
 		self.setGeometry(1,1,1350,800)
 		self.layout = QGridLayout(); 
 		self.layout.setColumnStretch(0,2); 
@@ -67,15 +70,15 @@ class SimulationWindow(QWidget):
 
 		#DATA COLLECTION
 		self.lastPush = []; 
+		beliefType = self.params['Model']['belNum']; 
+		pushing = self.params['Interface']['pushing']; 
+		self.CONTROL_TYPE = self.params['Interface']['controlType']; 
 		#self.SAVE_FILE = '../data/{}_bel{}_{}'.format(self.CONTROL_TYPE,beliefType,pushing,time.asctime().replace(' ','').replace(':','_')); 
 		self.SAVE_FILE = None; 
-		beliefType = None; 
-		pushing = "No"; #NO, MEH, GOOD
-		self.CONTROL_TYPE = "Human";  #Human,MAP,POMCP
 
 		#Make Models
-		self.trueModel = Model(trueModel=True);
-		self.assumedModel = Model(trueModel=False,belModel = beliefType); 
+		self.trueModel = Model(self.params,trueModel=True);
+		self.assumedModel = Model(self.params,trueModel=False); 
 		self.TARGET_STATUS = 'loose'; 
 
 		self.makeBreadCrumbColors(); 
@@ -89,16 +92,16 @@ class SimulationWindow(QWidget):
 		self.allSketchPlanes = {}; 
 		self.sketchLabels = {}; 
 		self.sketchDensity = 3; #radius in pixels of drawn sketch points
-		self.NUM_SKETCH_POINTS = 4; #Number of points kept 
+		self.NUM_SKETCH_POINTS = self.params['Interface']['numSketchPoints']; 
 
 		#Drone Params
 		self.droneClickListen = False; 
-		self.DRONE_WAIT_TIME = 5; 
+		self.DRONE_WAIT_TIME = self.params['Interface']['droneWaitTime']; 
 		self.timeLeft = self.DRONE_WAIT_TIME; 
-		self.DRONE_VIEW_RADIUS = 75; 
+		self.DRONE_VIEW_RADIUS = self.params['Interface']['droneViewRadius'];
 
 		#Controller Paramas
-		self.CONTROL_FREQUENCY = 3; #Hz
+		self.CONTROL_FREQUENCY = self.params['Interface']['controlFreq']; #Hz
 		
 		if(self.CONTROL_TYPE == "MAP"):
 			self.control = Controller(self.assumedModel); 
@@ -125,12 +128,9 @@ class SimulationWindow(QWidget):
 		if(self.CONTROL_TYPE != "Human"):
 			controlTimerStart(self); 
 
-		#addFinalPath(self,"MAP","NO",0); 
-
-
 		self.show()
 
-
+	#Sets up a series of QColors to let the comet trail fade
 	def makeBreadCrumbColors(self):
 		self.breadColors = []; 
 		num_crumbs = self.trueModel.BREADCRUMB_TRAIL_LENGTH; 
@@ -140,19 +140,18 @@ class SimulationWindow(QWidget):
 			self.breadColors.append(QColor(255,0,0,alpha))
 
 
+	#Listens for human control input
 	def keyReleaseEvent(self,event):
 		arrowEvents = [QtCore.Qt.Key_Up,QtCore.Qt.Key_Down,QtCore.Qt.Key_Left,QtCore.Qt.Key_Right]; 
 		if(self.CONTROL_TYPE=='Human'):
 			if(event.key() in arrowEvents):
 				moveRobot(self,event.key()); 
-			if(event.key() == QtCore.Qt.Key_Space):
-				moveRobot(self,arrowEvents[self.control.getActionKey_Greedy()]);
 
-
+	#Initializes robot position in layer
 	def makeRobot(self):
 		moveRobot(self,None); 
 		 
-
+	#Initializes target position in layer	
 	def makeTarget(self):
 		points = []; 
 		rad = self.trueModel.TARGET_SIZE_RADIUS; 
@@ -222,6 +221,7 @@ class SimulationWindow(QWidget):
 		self.assumedModel.transitionLayer *= 10.0;
 		self.assumedModel.transitionLayer -= 5.0; 
 
+		###Saves the map to a pdf file
 		# plt.figure(figsize = (4.3,7.5));  
 		# plt.contourf(np.flipud(np.amax(self.assumedModel.transitionLayer)-np.transpose(self.assumedModel.transitionLayer)),cmap='seismic'); 
 		# plt.axis('off'); 
@@ -233,6 +233,7 @@ class SimulationWindow(QWidget):
 		self.trueModel.transitionLayer *= 10.0;
 		self.trueModel.transitionLayer -= 5.0; 
 
+		###Saves the map to a pdf file
 		# plt.figure(figsize = (4.3,7.5)); 
 		# plt.contourf(np.flipud(np.amax(self.assumedModel.transitionLayer)-np.transpose(self.trueModel.transitionLayer)),cmap='seismic'); 
 		# plt.axis('off'); 
@@ -243,14 +244,12 @@ class SimulationWindow(QWidget):
 		self.transMapWidget_true.setPixmap(tm); 
 		self.tabs.addTab(self.transMapWidget_true,'True Transitions'); 
 
-		#self.tabs.setTabEnabled(1,False); 
 
 		self.transMapWidget_assumed = QLabel(); 
 		tm = makeModelMap(self,self.assumedModel.transitionLayer); 
 		self.transMapWidget_assumed.setPixmap(tm); 
 		self.tabs.addTab(self.transMapWidget_assumed,'Assumed Transitions'); 
 		
-
 	
 		#Cost Map
 		#************************************************************
@@ -284,16 +283,6 @@ class SimulationWindow(QWidget):
 		self.sketchName.setPlaceholderText("Sketch Name");  
 		self.layout.addWidget(self.sketchName,2,3,1,2); 
 
-		# self.sketchObs = QRadioButton("Observable",self); 
-		# self.sketchObs.setChecked(True); 
-		# self.sketchObs.setDisabled(True); 
-
-		# self.layout.addWidget(self.sketchObs,3,2); 
-
-		#A Label at 3,2
-		#Two button groups
-		#A group at 3,3 with Safe (Pre) and Dangerous
-		#A group at 3,4 with Fast, nominal (Pre), and slow
 
 		sketchButtonLabel = QLabel("Sketch Parameters"); 
 		self.layout.addWidget(sketchButtonLabel,3,2); 
@@ -345,10 +334,6 @@ class SimulationWindow(QWidget):
 		self.layout.addWidget(self.relationsDrop,7,3); 
 
 		self.objectsDrop = QComboBox();
-		# self.objectsDrop.addItem("Sand"); 
-		# self.objectsDrop.addItem("Trees 1");
-		# self.objectsDrop.addItem("ROUS");
-		# self.objectsDrop.addItem("Trees 2");
 		self.objectsDrop.addItem("You"); 
 		self.layout.addWidget(self.objectsDrop,7,4); 
 
@@ -410,8 +395,8 @@ class SimulationWindow(QWidget):
 		self.imageScene.mouseReleaseEvent = lambda event:imageMouseRelease(event,self);
 
 
-		self.saveShortcut = QShortcut(QKeySequence("Ctrl+B"),self); 
-		self.saveShortcut.activated.connect(self.saveBeliefs); 
+		self.saveBeliefShortcut = QShortcut(QKeySequence("Ctrl+B"),self); 
+		self.saveBeliefShortcut.activated.connect(self.saveBeliefs); 
 
 		self.saveAllShortcut = QShortcut(QKeySequence("Ctrl+A"),self); 
 		self.saveAllShortcut.activated.connect(self.saveAllThings);
@@ -425,8 +410,10 @@ class SimulationWindow(QWidget):
 
 if __name__ == '__main__':
 
+	configFile = 'config.yaml'; 
+
 	app = QApplication(sys.argv); 
-	ex = SimulationWindow(); 
+	ex = SimulationWindow(configFile); 
 	sys.exit(app.exec_()); 
 
 

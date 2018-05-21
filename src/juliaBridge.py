@@ -1,5 +1,23 @@
+"""
+***********************************************************
+File: juliaBridge.py
+Author: Luke Burks
+Date: May 2018
 
+Allows for passing information between a python process and 
+a julia process. Passes via standard in and out. 
 
+***********************************************************
+"""
+
+__author__ = "Luke Burks"
+__copyright__ = "Copyright 2018"
+__credits__ = ["Luke Burks"]
+__license__ = "GPL"
+__version__ = "0.1.0"
+__maintainer__ = "Luke Burks"
+__email__ = "luke.burks@colorado.edu"
+__status__ = "Development"
 
 import julia
 
@@ -16,12 +34,6 @@ def watch(j,solver,pomdp,planner):
 
 	while(True):
 		try:
-			# cp0 = float(raw_input());
-			# cp1 = float(raw_input()); 
-			# mmean0 = float(raw_input()); 
-			# mmean1 = float(raw_input()); 
-			# cov0 = float(raw_input()); 
-			# cov1 = float(raw_input());
 
 			cp0 = []; 
 			cp1 = []; 

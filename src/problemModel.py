@@ -18,7 +18,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2018"
 __credits__ = ["Luke Burks"]
 __license__ = "GPL"
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -33,42 +33,39 @@ from interfaceFunctions import distance
 
 class Model:
 
-	def __init__(self,size = [437,754],trueModel = False,belModel = None):
+	def __init__(self,params,size = [437,754],trueModel = False,):
 
 		self.truth = trueModel
 
 		#Cop Pose
-		self.copPose = [200,500];
+		self.copPose = params['Model']['copInitPose'];
 
-		self.ROBOT_VIEW_RADIUS = 25; 
-		self.ROBOT_SIZE_RADIUS = 10; 
-		self.ROBOT_NOMINAL_SPEED = 10; 
-		self.TARGET_SIZE_RADIUS = 10; 
+		self.ROBOT_VIEW_RADIUS = params['Model']['robotViewRadius']; 
+		self.ROBOT_SIZE_RADIUS = params['Model']['robotSizeRadius']; 
+		self.ROBOT_NOMINAL_SPEED = params['Model']['robotNominalSpeed']; 
+		self.TARGET_SIZE_RADIUS = params['Model']['targetSizeRadius']; 
 
-		self.MAX_BELIEF_SIZE = 15; 
+		self.MAX_BELIEF_SIZE = params['Model']['numRandBel']; 
 
-		self.BREADCRUMB_TRAIL_LENGTH = 100; 
+		self.BREADCRUMB_TRAIL_LENGTH = params['Model']['breadCrumbLength']; 
 
 		self.history = {'beliefs':[],'positions':[],'sketches':{},'humanObs':[]}; 
 
+		belModel = params['Model']['belNum']
+
 		#Make Target or Belief
 		if(not self.truth):
-			if(belModel is None):
+			if(belModel == 'None'):
 				self.belief = GM(); 
-				# self.belief.addNewG([100,100],[[1000,0],[0,1000]],1); 
-				# self.belief.addNewG([400,400],[[1000,0],[0,1000]],1); 
-				# self.belief.addNewG([400,100],[[1000,0],[0,1000]],1); 
-				# self.belief.addNewG([100,400],[[1000,0],[0,1000]],1); 
-				self.belief.addNewG([400,200],[[1000,0],[0,1000]],.25); 
-				#self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[1000,0],[0,1000]],1); 
 
-				for i in range(0,40):
+				for i in range(0,self.MAX_BELIEF_SIZE):
 					self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[2000+500*np.random.normal(),0],[0,2000+500*np.random.normal()]],np.random.random()); 
 				self.belief.normalizeWeights(); 
 			else:
 				self.belief = np.load("../models/beliefs{}.npy".format(belModel))[0]
-		else:
-			self.robPose = [400,200];
+
+
+		self.robPose = params['Model']['targetInitPose'];
 		
 		self.bounds = {'low':[0,0],'high':[437,754]}
 		
@@ -89,36 +86,20 @@ class Model:
 	def setupCostLayer(self):
 		self.costLayer = np.zeros(shape=(self.bounds['high'][0],self.bounds['high'][1]));
 
-		num_mines = 100; 
+		x = self.robPose[0]
+		y = self.robPose[1]; 
 
-		#set some random mines:
-		for i in range(0,num_mines):
-			x = np.random.randint(self.bounds['low'][0],self.bounds['high'][0]-10)
-			y = np.random.randint(self.bounds['low'][1],self.bounds['high'][1]-10)
-			for j in range(0,10):
-				for k in range(0,10):
-					self.costLayer[x+j,y+k] = -10; 
+		for i in range(self.bounds['low'][0],self.bounds['high'][0]):
+			for j in range(self.bounds['low'][1],self.bounds['high'][1]):
+				if(not (i==x and y==j)):
+					self.costLayer[i,j] = 1/np.sqrt((x-i)*(x-i) + (y-j)*(y-j)); 
 
-		#set up a reward
-		#x = np.random.randint(self.bounds['low'][0],self.bounds['high'][0]-10)
-		#y = np.random.randint(self.bounds['low'][1],self.bounds['high'][1]-10)
-		x,y = 400,200
-		for j in range(0,10):
-			for k in range(0,10):
-				self.costLayer[x+j,y+k] = 10;
 
 
 	def setupTransitionLayer(self):
 		self.transitionLayer = np.zeros(shape=(self.bounds['high'][0],self.bounds['high'][1]));
 
 		if(self.truth):
-			# for i in range(200,400):
-			# 	for j in range(200,400):
-			# 		self.transitionLayer[i,j] = -8; 
-
-			# for i in range(100,250):
-			# 	for j in range(100,250):
-			# 		self.transitionLayer[i,j] = 5; 
 			self.transitionLayer = np.load('../models/trueTransitions.npy'); 
 
 
