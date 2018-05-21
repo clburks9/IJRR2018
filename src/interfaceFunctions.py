@@ -41,6 +41,25 @@ from copy import copy,deepcopy
 from MCTS import OnlineSolver
 
 
+
+
+def addFinalPath(wind,control,pushing,belnum):
+	fileName = '../data/{}_bel{}_{}.npy'.format(control,belnum,pushing); 
+
+	data = np.load(fileName);
+	data = data[0]; 
+	poses = data['positions']; 
+
+	pen = QPen(QColor(0,0,0,255)); 
+	pen.setWidth(5); 
+
+	print(poses);
+
+	defog(wind,poses); 
+	planeFlushPaint(wind.robotPlane,poses,QColor(0,255,0,255)); 
+
+
+
 def makeBeliefMap(wind):
 	#print(wind.assumedModel.belief); 
 	#wind.assumedModel.belief.display()
@@ -166,8 +185,8 @@ def moveRobot(wind,eventKey=None):
 def updateSavedModel(wind):
 	mod = wind.assumedModel; 
 
-	mod.history['beliefs'].append(mod.belief);
-	mod.history['positions'].append(mod.copPose); 
+	mod.history['beliefs'].append(deepcopy(mod.belief));
+	mod.history['positions'].append(deepcopy(mod.copPose)); 
 	mod.history['sketches'] = mod.sketches; 
 
 	if(len(wind.lastPush) > 0):

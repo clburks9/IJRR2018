@@ -62,7 +62,7 @@ class Model:
 				self.belief.addNewG([400,200],[[1000,0],[0,1000]],.25); 
 				#self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[1000,0],[0,1000]],1); 
 
-				for i in range(0,15):
+				for i in range(0,40):
 					self.belief.addNewG([np.random.randint(0,437),np.random.randint(0,754)],[[2000+500*np.random.normal(),0],[0,2000+500*np.random.normal()]],np.random.random()); 
 				self.belief.normalizeWeights(); 
 			else:
@@ -75,7 +75,8 @@ class Model:
 		self.setupTransitionLayer(); 
 		self.setupCostLayer(); 
 
-		self.spatialRealtions = {'Near':0,'South of':4,'West of':1,'North of':2,'East of':3}; 
+		#self.spatialRealtions = {'Near':0,'South of':4,'West of':1,'North of':2,'East of':3}; 
+		self.spatialRealtions = {'Near':0,'South of':1,'West of':2,'North of':3,'East of':4}; 
 
 		self.sketches = {};
 

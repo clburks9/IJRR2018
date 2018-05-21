@@ -65,10 +65,13 @@ class SimulationWindow(QWidget):
 		# self.layout.setColumnStretch(4,1);
 		self.setLayout(self.layout); 
 
-		#Data Taking Params
-		beliefType = 1; 
-		pushing = "NO"; #NO, MEH, GOOD
-		self.CONTROL_TYPE = "MAP";  #Human,MAP,POMCP
+		#DATA COLLECTION
+		self.lastPush = []; 
+		#self.SAVE_FILE = '../data/{}_bel{}_{}'.format(self.CONTROL_TYPE,beliefType,pushing,time.asctime().replace(' ','').replace(':','_')); 
+		self.SAVE_FILE = None; 
+		beliefType = None; 
+		pushing = "No"; #NO, MEH, GOOD
+		self.CONTROL_TYPE = "Human";  #Human,MAP,POMCP
 
 		#Make Models
 		self.trueModel = Model(trueModel=True);
@@ -95,7 +98,7 @@ class SimulationWindow(QWidget):
 		self.DRONE_VIEW_RADIUS = 75; 
 
 		#Controller Paramas
-		self.CONTROL_FREQUENCY = 5; #Hz
+		self.CONTROL_FREQUENCY = 3; #Hz
 		
 		if(self.CONTROL_TYPE == "MAP"):
 			self.control = Controller(self.assumedModel); 
@@ -103,11 +106,7 @@ class SimulationWindow(QWidget):
 			self.control = sp.Popen(['python','-u','juliaBridge.py'],stdin = sp.PIPE,stdout = sp.PIPE,stderr=sp.STDOUT)
 
 
-		#DATA COLLECTION
-		self.lastPush = []; 
-		#self.SAVE_STATUS = True; 
-		self.SAVE_FILE = '../data/{}_bel{}_{}'.format(self.CONTROL_TYPE,beliefType,pushing,time.asctime().replace(' ','').replace(':','_')); 
-
+		
 		self.makeMapGraphics();
 
 		self.makeTabbedGraphics(); 
@@ -125,6 +124,9 @@ class SimulationWindow(QWidget):
 
 		if(self.CONTROL_TYPE != "Human"):
 			controlTimerStart(self); 
+
+		#addFinalPath(self,"MAP","NO",0); 
+
 
 		self.show()
 

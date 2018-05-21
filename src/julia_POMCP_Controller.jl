@@ -17,7 +17,7 @@ function makeSolver()
 	actions(::D4ICRA) = [0,1,2,3]
 	n_actions(::D4ICRA) = 4
 	pomdp = D4ICRA(0.9,1); 
-	solver = POMCPSolver(tree_queries=10000, c=10)
+	solver = POMCPSolver(tree_queries=20000, c=10)
 	#solver = POMCPSolver()
 	#solver = POMCPSolver(max_time=1)
 	planner = solve(solver, pomdp);
