@@ -72,6 +72,7 @@ class Model:
 		self.setupTransitionLayer(); 
 		self.setupCostLayer(); 
 
+		#TODO: Spatial Relations don't always map correctly, fix it....
 		#self.spatialRealtions = {'Near':0,'South of':4,'West of':1,'North of':2,'East of':3}; 
 		self.spatialRealtions = {'Near':0,'South of':1,'West of':2,'North of':3,'East of':4}; 
 
