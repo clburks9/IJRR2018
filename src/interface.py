@@ -208,9 +208,9 @@ class SimulationWindow(QWidget):
 
 		#Belief Map
 		#************************************************************
-		self.beliefMapWidget = QLabel(self); 
-		pm = makeBeliefMap(self); 
-		self.beliefMapWidget.setPixmap(pm); 
+		#self.beliefMapWidget = QLabel(self); 
+		self.beliefMapWidget = makeBeliefMap(self); 
+		#self.beliefMapWidget.setPixmap(pm); 
 		self.tabs.addTab(self.beliefMapWidget,'Belief'); 
 
 		#Transitions Map

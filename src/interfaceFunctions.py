@@ -48,17 +48,11 @@ def makeBeliefMap(wind):
 	canvas = FigureCanvas(fig); 
 	ax = fig.add_subplot(111); 
 	ax.contourf(np.transpose(c),cmap='viridis',alpha=1); 
+	ax.invert_yaxis(); 
 	ax.set_axis_off(); 
+
 	canvas.draw(); 
-	size=canvas.size(); 
-	width,height = size.width(),size.height(); 
-
-	im = QImage(canvas.buffer_rgba(),width,height,QtGui.QImage.Format_RGB32); 
-	im = im.mirrored(vertical=True);
-
-	pm = QPixmap(im); 
-	pm = pm.scaled(wind.imgWidth,wind.imgHeight); 
-	return pm; 
+	return canvas; 
 
 #Converts a transition or cost model to an image
 def makeModelMap(wind,layer):
@@ -139,8 +133,11 @@ def moveRobot(wind,eventKey=None):
 	if(len(wind.assumedModel.prevPoses) > 1):
 		change = wind.assumedModel.stateLWISUpdate(); 
 		if(change):
+			wind.tabs.removeTab(0); 
 			pm = makeBeliefMap(wind); 
-			wind.beliefMapWidget.setPixmap(pm);   
+			wind.beliefMapWidget = pm; 
+			wind.tabs.insertTab(0,wind.beliefMapWidget,'Belief');
+			wind.tabs.setCurrentIndex(0);   
 	if(wind.TARGET_STATUS=='loose'):
 		checkEndCondition(wind); 
 
@@ -490,9 +487,11 @@ def pushButtonPressed(wind):
 
 	wind.assumedModel.stateObsUpdate(name,rel,pos); 
 
+	wind.tabs.removeTab(0); 
 	pm = makeBeliefMap(wind); 
-	wind.beliefMapWidget.setPixmap(pm); 
-
+	wind.beliefMapWidget = pm; 
+	wind.tabs.insertTab(0,wind.beliefMapWidget,'Belief');
+	wind.tabs.setCurrentIndex(0); 
 	wind.lastPush = [pos,rel,name]; 
 
 
