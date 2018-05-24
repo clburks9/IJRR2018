@@ -140,11 +140,12 @@ class Model:
 		centy = np.mean([x[1] for x in vertices]); 
 		le = 30; 
 		wi = 30; 
-		pz.buildOrientedRecModel([centx,centy],0,le,wi,steepness=5); 
+		pz.buildOrientedRecModel([centx,centy],0,le,wi,steepness=2); 
 
 		#pz.plot2D(low=[1,1],high=[400,700],delta=10); 
 		self.sketches[name] = pz; 
-		self.obsMix.addSoft(name,pz); 
+		#self.obsMix.addSoft(name,pz); 
+
 
 	def stateObsUpdate(self,name,relation,pos="Is"):
 		if(name == 'You'):
@@ -173,6 +174,7 @@ class Model:
 
 
 	def relativeUpdate(self,classes,AND_OR):
+		self.obsMix = SM(self.sketches); 
 		if(AND_OR == 'and'):
 			self.belief = self.obsMix.AND_VBND(self.belief,classes); 
 		else:

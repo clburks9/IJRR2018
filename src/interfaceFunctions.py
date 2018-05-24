@@ -65,6 +65,8 @@ def makeBeliefMap(wind):
 
 #Converts a transition or cost model to an image
 def makeModelMap(wind,layer):
+	#TODO: Redo this in the same way as the make belief function
+
 	sp = SubplotParams(left=0.,bottom=0.,right=1.,top=1.); 
 	fig = Figure(subplotpars=sp); 
 	canvas = FigureCanvas(fig); 
