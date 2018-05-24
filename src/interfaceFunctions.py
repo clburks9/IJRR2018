@@ -48,17 +48,20 @@ def makeBeliefMap(wind):
 	canvas = FigureCanvas(fig); 
 	ax = fig.add_subplot(111); 
 	ax.contourf(np.transpose(c),cmap='viridis',alpha=1); 
+	ax.invert_yaxis(); 
 	ax.set_axis_off(); 
+
 	canvas.draw(); 
-	size=canvas.size(); 
-	width,height = size.width(),size.height(); 
+	return canvas; 
+	# size=canvas.size(); 
+	# width,height = size.width(),size.height(); 
 
-	im = QImage(canvas.buffer_rgba(),width,height,QtGui.QImage.Format_RGB32); 
-	im = im.mirrored(vertical=True);
+	# im = QImage(canvas.buffer_rgba(),width,height,QtGui.QImage.Format_RGB32); 
+	# im = im.mirrored(vertical=True);
 
-	pm = QPixmap(im); 
-	pm = pm.scaled(wind.imgWidth,wind.imgHeight); 
-	return pm; 
+	# pm = QPixmap(im); 
+	# pm = pm.scaled(wind.imgWidth,wind.imgHeight); 
+	# return pm; 
 
 #Converts a transition or cost model to an image
 def makeModelMap(wind,layer):
@@ -139,8 +142,11 @@ def moveRobot(wind,eventKey=None):
 	if(len(wind.assumedModel.prevPoses) > 1):
 		change = wind.assumedModel.stateLWISUpdate(); 
 		if(change):
+			wind.tabs.removeTab(0); 
 			pm = makeBeliefMap(wind); 
-			wind.beliefMapWidget.setPixmap(pm);   
+			wind.beliefMapWidget = pm; 
+			wind.tabs.insertTab(0,wind.beliefMapWidget,'Belief');
+			wind.tabs.setCurrentIndex(0);    
 	if(wind.TARGET_STATUS=='loose'):
 		checkEndCondition(wind); 
 
@@ -201,6 +207,7 @@ def movementViewChanges(wind):
 
 def startSketch(wind):
 	wind.sketchListen=True;
+	wind.sketchingInProgress = True;
 	wind.allSketchPaths.append([]); 
 
 def imageMousePress(QMouseEvent,wind):
@@ -246,17 +253,23 @@ def imageMouseRelease(QMouseEvent,wind):
 		wind.safeRadio.setChecked(True); 
 		wind.nomRadio.setChecked(True); 
 
-		wind.allSketches[tmp] = wind.allSketchPaths[-1]; 
+		cent = [int(QMouseEvent.scenePos().x()),int(QMouseEvent.scenePos().y())]; 
+		sieR = 25; 
+		points = [[cent[0]-sieR,cent[1]-sieR],[cent[0]+sieR,cent[1]-sieR],[cent[0]+sieR,cent[1]+sieR],[cent[0]-sieR,cent[1]+sieR]]; 
+
+		wind.allSketches[tmp] = points; 
 		wind.sketchListen = False; 
 		wind.sketchingInProgress = False; 
-		updateModels(wind,tmp,cost,speed);
+		updateModels(wind,tmp,cost,speed,points);
 
-def updateModels(wind,name,cost,speed):
-	pairedPoints = np.array(wind.allSketches[name]); 
-	cHull = ConvexHull(pairedPoints); 
+def updateModels(wind,name,cost,speed,points):
+	#pairedPoints = np.array(wind.allSketches[name]); 
+	#pairedPoints = points; 
+	# cHull = ConvexHull(pairedPoints); 
 	xFudge = len(name)*10/2; 
 
-	vertices = fitSimplePolyToHull(cHull,pairedPoints,N=wind.NUM_SKETCH_POINTS); 
+	# vertices = fitSimplePolyToHull(cHull,pairedPoints,N=wind.NUM_SKETCH_POINTS);
+	vertices = points;  
 
 
 	centx = np.mean([vertices[i][0] for i in range(0,len(vertices))])-xFudge; 
@@ -488,11 +501,43 @@ def pushButtonPressed(wind):
 	name = str(wind.objectsDrop.currentText());
 	pos = str(wind.positivityDrop.currentText());
 
-	wind.assumedModel.stateObsUpdate(name,rel,pos); 
 
-	pm = makeBeliefMap(wind); 
-	wind.beliefMapWidget.setPixmap(pm); 
+	if(wind.pushList is None):
+		wind.pushList = {}; 
+		for key in wind.assumedModel.sketches.keys():
+			wind.pushList[key] = [];	
+	if(name not in wind.pushList.keys()):
+		wind.pushList[name] = []; 
+
+	#spatialRealtions = {'Near':0,'South of':1,'West of':2,'North of':3,'East of':4};  
+	spatialRealtions = wind.assumedModel.spatialRealtions;
+	wind.pushList[name].append(spatialRealtions[rel]); 
+
+	print(wind.pushList); 
+
+	#wind.assumedModel.stateObsUpdate(name,rel,pos); 
+
+	#pm = makeBeliefMap(wind); 
+	#wind.beliefMapWidget.setPixmap(pm); 
 
 	wind.lastPush = [pos,rel,name]; 
 
+def submitButtonPressed(wind):
 
+	#print(wind.pushList); 
+
+	pos = str(wind.positivityDrop.currentText());
+	wind.assumedModel.relativeUpdate(wind.pushList,pos); 
+	wind.pushList = None; 
+
+	#pm = makeBeliefMap(wind); 
+	#wind.beliefMapWidget.setPixmap(pm); 
+
+	wind.tabs.removeTab(0); 
+	pm = makeBeliefMap(wind); 
+	wind.beliefMapWidget = pm; 
+	wind.tabs.insertTab(0,wind.beliefMapWidget,'Belief');
+	wind.tabs.setCurrentIndex(0); 
+
+def clearButtonPressed(wind):
+	wind.pushList = None; 

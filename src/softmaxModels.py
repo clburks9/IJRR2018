@@ -12,6 +12,8 @@ Allows for the creation, and use of Softmax functions
 
 Version 1.3.0: Added Discretization function
 Version 1.3.1: Added Likelihood weighted Importance sampling
+Version 1.3.2: Added single class plot returns and weighted
+				sum options
 ***********************************************************
 '''
 
@@ -19,7 +21,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2017, Cohrint"
 __credits__ = ["Luke Burks", "Nisar Ahmed"]
 __license__ = "GPL"
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -49,12 +51,15 @@ from sklearn.linear_model import LogisticRegression
 class Softmax:
 
 
-	def __init__(self,weights= None,bias = None):
+	def __init__(self,weights= None,bias = None,probWeight=1):
 		'''
 		Initialize with either:
 		1. Nothing, for empty softmax model
 		2. Vector of weights (n x d) and bias (nx1)
 		'''
+
+		#For use in weighted sums
+		self.probWeight = probWeight;
 
 		self.weights = weights;
 		self.bias = bias; 
@@ -66,6 +71,9 @@ class Softmax:
 			self.zeta_c = [0]*len(self.weights); 
 			for i in range(0,len(self.weights)):
 				self.zeta_c[i] = random()*10;  
+
+	def setProbWeight(self,w):
+		self.probWeight = w; 
 
 	def nullspace(self,A,atol=1e-13,rtol=0):
 		'''
@@ -640,7 +648,7 @@ class Softmax:
 		else:
 			return [x,softmax]; 
 
-	def plot2D(self,low = [0,0],high = [5,5],labels = None,vis = True,delta=0.1):
+	def plot2D(self,low = [0,0],high = [5,5],labels = None,vis = True,delta=0.1,retClass = None):
 		x, y = np.mgrid[low[0]:high[0]:delta, low[1]:high[1]:delta]
 		pos = np.dstack((x, y))  
 		resx = int((high[0]-low[0])//delta)+1;
@@ -658,6 +666,9 @@ class Softmax:
 					for k in range(0,len(self.weights)):
 						dem+=np.exp(self.weights[k][0]*xx + self.weights[k][1]*yy + self.bias[k]);
 					model[m][i][j] = np.exp(self.weights[m][0]*xx + self.weights[m][1]*yy + self.bias[m])/dem;
+
+		if(retClass is not None):
+			return x,y,model[retClass]; 
 
 		dom = [[0 for i in range(0,resy)] for j in range(0,resx)]; 
 		for m in range(0,len(self.weights)):

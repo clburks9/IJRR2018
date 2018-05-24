@@ -59,6 +59,7 @@ class SimulationWindow(QWidget):
 		with open(cf,'r') as stream:
 			self.params = yaml.load(stream); 
 
+		self.setWindowTitle("SUMSOFTMAX BRANCH")
 		self.setGeometry(1,1,1350,800)
 		self.layout = QGridLayout(); 
 		self.layout.setColumnStretch(0,2); 
@@ -108,7 +109,7 @@ class SimulationWindow(QWidget):
 		elif(self.CONTROL_TYPE == "POMCP"):		
 			self.control = sp.Popen(['python','-u','juliaBridge.py'],stdin = sp.PIPE,stdout = sp.PIPE,stderr=sp.STDOUT)
 
-
+		self.pushList = None; 
 		
 		self.makeMapGraphics();
 
@@ -208,9 +209,9 @@ class SimulationWindow(QWidget):
 
 		#Belief Map
 		#************************************************************
-		self.beliefMapWidget = QLabel(self); 
-		pm = makeBeliefMap(self); 
-		self.beliefMapWidget.setPixmap(pm); 
+		#self.beliefMapWidget = QLabel(self); 
+		self.beliefMapWidget = makeBeliefMap(self); 
+		#self.beliefMapWidget.setPixmap(pm); 
 		self.tabs.addTab(self.beliefMapWidget,'Belief'); 
 
 		#Transitions Map
@@ -321,8 +322,8 @@ class SimulationWindow(QWidget):
 		self.layout.addWidget(pushLabel,6,2); 
 
 		self.positivityDrop = QComboBox(); 
-		self.positivityDrop.addItem("Is"); 
-		self.positivityDrop.addItem("Is not"); 
+		self.positivityDrop.addItem("or"); 
+		self.positivityDrop.addItem("and"); 
 		self.layout.addWidget(self.positivityDrop,7,2); 
 
 		self.relationsDrop = QComboBox();
@@ -334,12 +335,21 @@ class SimulationWindow(QWidget):
 		self.layout.addWidget(self.relationsDrop,7,3); 
 
 		self.objectsDrop = QComboBox();
-		self.objectsDrop.addItem("You"); 
+		#self.objectsDrop.addItem("You"); 
 		self.layout.addWidget(self.objectsDrop,7,4); 
 
-		self.pushButton = QPushButton("Submit"); 
-		self.pushButton.setStyleSheet("background-color: green"); 
+		self.pushButton = QPushButton("Add"); 
+		self.pushButton.setStyleSheet("background-color: yellow"); 
 		self.layout.addWidget(self.pushButton,7,5); 
+
+		self.submitButton = QPushButton("Submit"); 
+		self.submitButton.setStyleSheet("background-color: green"); 
+		self.layout.addWidget(self.submitButton,8,5);
+
+		self.clearButton = QPushButton("Clear List");
+		self.clearButton.setStyleSheet("background-color: red"); 
+		self.layout.addWidget(self.clearButton,8,4); 
+
 
 
 		#Drone Launch Section
@@ -389,9 +399,11 @@ class SimulationWindow(QWidget):
 		self.noButton.clicked.connect(lambda: getNewRobotPullQuestion(self)); 
 
 		self.pushButton.clicked.connect(lambda: pushButtonPressed(self)); 
+		self.submitButton.clicked.connect(lambda: submitButtonPressed(self)); 
+		self.clearButton.clicked.connect(lambda: clearButtonPressed(self)); 
 
 		self.imageScene.mousePressEvent = lambda event:imageMousePress(event,self); 
-		self.imageScene.mouseMoveEvent = lambda event:imageMouseMove(event,self); 
+		#self.imageScene.mouseMoveEvent = lambda event:imageMouseMove(event,self); 
 		self.imageScene.mouseReleaseEvent = lambda event:imageMouseRelease(event,self);
 
 

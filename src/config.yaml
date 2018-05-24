@@ -19,7 +19,7 @@ Interface:
   #Human: Requires manual input with arrow keys
   #MAP: Takes shortest route to point of highest belief
   #POMCP: Calls JuliaPOMCP
-  controlType: "MAP"
+  controlType: "Human"
 
   #Number of points to retain in polygon fitting, {3-\inf}
   numSketchPoints: 4

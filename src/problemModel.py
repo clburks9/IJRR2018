@@ -25,6 +25,7 @@ __status__ = "Development"
 
 from gaussianMixtures import Gaussian,GM; 
 from softmaxModels import Softmax;
+from softmaxMixtures import SM;
 
 import matplotlib.pyplot as plt
 import numpy as np; 
@@ -74,9 +75,13 @@ class Model:
 
 		#TODO: Spatial Relations don't always map correctly, fix it....
 		#self.spatialRealtions = {'Near':0,'South of':4,'West of':1,'North of':2,'East of':3}; 
-		self.spatialRealtions = {'Near':0,'South of':1,'West of':2,'North of':3,'East of':4}; 
+		#self.spatialRealtions = {'Near':0,'South of':1,'West of':2,'North of':3,'East of':4};
+		#self.spatialRealtions = {'Near':0,'South of':1,'West of':2,'North of':3,'East of':4};  
+		#self.spatialRealtions = {'Near':0,'South of':2,'West of':3,'North of':4,'East of':1};
+		self.spatialRealtions = {'Near':0,'South of':3,'West of':2,'North of':1,'East of':4};
 
 		self.sketches = {};
+		self.obsMix = SM(); 
 
 		self.prevPoses = []; 
 
@@ -126,10 +131,20 @@ class Model:
 
 	def makeSketch(self,vertices,name):
 		pz = Softmax(); 
-		vertices.sort(key=lambda x: x[1])
+		#vertices.sort(key=lambda x: x[1])
 
-		pz.buildPointsModel(vertices,steepness=2); 
+		#find area of 
+
+		#pz.buildPointsModel(vertices,steepness=3); 
+		centx = np.mean([x[0] for x in vertices]); 
+		centy = np.mean([x[1] for x in vertices]); 
+		le = 30; 
+		wi = 30; 
+		pz.buildOrientedRecModel([centx,centy],0,le,wi,steepness=5); 
+
+		#pz.plot2D(low=[1,1],high=[400,700],delta=10); 
 		self.sketches[name] = pz; 
+		self.obsMix.addSoft(name,pz); 
 
 	def stateObsUpdate(self,name,relation,pos="Is"):
 		if(name == 'You'):
@@ -156,6 +171,12 @@ class Model:
 			self.belief.condense(self.MAX_BELIEF_SIZE); 
 			self.belief.normalizeWeights()
 
+
+	def relativeUpdate(self,classes,AND_OR):
+		if(AND_OR == 'and'):
+			self.belief = self.obsMix.AND_VBND(self.belief,classes); 
+		else:
+			self.belief = self.obsMix.OR_VBND(self.belief,classes); 
 
 
 	def stateLWISUpdate(self):
