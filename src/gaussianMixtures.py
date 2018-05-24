@@ -13,6 +13,8 @@ of multivariate normals, or Gaussian Mixture Models (GMM).
 Version 1.3.5: added normalized ISD
 Version 1.3.6: removed warning filtering
 Version 1.3.7: added pointEval function for gaussian
+Version 1.3.8: added random mixture generation and fixed
+				scalerMulitply to scalarMultiply
 ***********************************************************
 '''
 
@@ -21,7 +23,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2016, Cohrint"
 __credits__ = ["Luke Burks", "Nisar Ahmed"]
 __license__ = "GPL"
-__version__ = "1.3.7"
+__version__ = "1.3.8"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -83,6 +85,7 @@ class Gaussian:
 
 
 
+
 class GM:
 	def __init__(self,u=None,s=None,w=None):
 		'''
@@ -141,6 +144,37 @@ class GM:
 			ans.append(g.weight);
 		return ans;
 
+
+	def makeRandomMixture(self,size=10,dims=2,perMax = 10,lowBound = 0, highBound = 10):
+		#In case you forget, perMax refers to percision
+		for i in range(0,size):
+			self.addG(self.sampleWishart(dims,perMax,lowBound,highBound)); 
+		self.normalizeWeights(); 
+
+
+
+	def sampleWishart(self,dims,sigMax,lowBound,highBound):
+
+		sigPrior = np.diag(np.ones(dims))*sigMax;
+
+
+		df = dims; 
+		cholesky = np.linalg.cholesky(sigPrior); 
+		X = np.dot(cholesky,np.random.normal(size=(dims,df))); 
+		sigma = np.linalg.inv(np.dot(X,X.T)); 
+
+		weight = np.random.random();  
+
+
+		lowInit = [lowBound]*dims; 
+		highInit = [highBound]*dims;
+		mu = []; 
+		for i in range(0,dims):
+			mu.append(np.random.random()*(highInit[i]-lowInit[i]) + lowInit[i]); 
+
+		sigma=sigma.tolist();
+
+		return Gaussian(mu,sigma,weight); 
 
 
 	def clean(self):
@@ -573,7 +607,7 @@ class GM:
 
 
 
-	def scalerMultiply(self,s):
+	def scalarMultiply(self,s):
 		'''
 		Multiplies the weight of each mixand by scalar s
 		'''
@@ -1104,6 +1138,19 @@ def TestDiscretization():
 	plt.contourf(grid);
 	plt.show();
 
+
+def TestRandomMixtureCreation():
+
+	dims=2; 
+	size = 10; 
+	low = 1; 
+	high = 2;
+	per = 3; 
+	gm = GM(); 
+	gm.makeRandomMixture(size,dims,per,low,high); 
+
+	gm.plot2D(); 
+
 if __name__ == "__main__":
 
 	#TestGMProduct();
@@ -1115,4 +1162,5 @@ if __name__ == "__main__":
 	#TestComparison();
 	#TestSample();
 	#TestSample2D();
-	TestDiscretization();
+	#TestDiscretization();
+	TestRandomMixtureCreation(); 
