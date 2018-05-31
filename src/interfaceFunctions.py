@@ -212,7 +212,7 @@ def imageMousePress(QMouseEvent,wind):
 		name = wind.sketchName.text(); 
 		if(name not in wind.allSketchPlanes.keys()):
 			wind.allSketchPlanes[name] = wind.imageScene.addPixmap(makeTransparentPlane(wind));
-			wind.objectsDrop.addItem(name);
+			#wind.objectsDrop.addItem(name);
 			wind.allSketchNames.append(name); 
 		else:
 			planeFlushPaint(wind.allSketchPlanes[name],[]);
@@ -481,17 +481,46 @@ def loadQuestions(wind):
 
 
 def pushButtonPressed(wind):
-	rel = str(wind.relationsDrop.currentText()) 
-	name = str(wind.objectsDrop.currentText());
-	pos = str(wind.positivityDrop.currentText());
+	#rel = str(wind.relationsDrop.currentText()) 
+	#name = str(wind.objectsDrop.currentText());
+	#pos = str(wind.positivityDrop.currentText());
 
-	wind.assumedModel.stateObsUpdate(name,rel,pos); 
+	text = str(wind.pushChat.text()); 
+	wind.pushChat.clear();
+	wind.pushChat.setPlaceholderText("What do you see?");  
 
-	wind.tabs.removeTab(0); 
-	pm = makeBeliefMap(wind); 
-	wind.beliefMapWidget = pm; 
-	wind.tabs.insertTab(0,wind.beliefMapWidget,'Belief');
-	wind.tabs.setCurrentIndex(0); 
-	wind.lastPush = [pos,rel,name]; 
+	if(len(text) > 0):
+		
+		#print(text); 
+
+		pos = 'Is'; 
+		negators = ['not','isn\'t','isnt','aint','ain\'t','\'t'];
+		for n in negators:
+			if(n in text):
+				pos = 'Is not'; 
+
+		rel = 'near'; 
+		options = ['south','north','east','west'];
+		for o in options:
+			if(o.lower() in text):
+
+				rel = o.lower() + ' of'; 
+				break; 
+
+		name = 'You'; 
+		things = wind.assumedModel.sketches.keys();
+		for t in things:
+			if(t in text):
+				name = t; 
+				break; 
+
+		wind.assumedModel.stateObsUpdate(name,rel,pos); 
+
+		wind.tabs.removeTab(0); 
+		pm = makeBeliefMap(wind); 
+		wind.beliefMapWidget = pm; 
+		wind.tabs.insertTab(0,wind.beliefMapWidget,'Belief');
+		wind.tabs.setCurrentIndex(0); 
+		wind.lastPush = [pos,rel,name]; 
 
 

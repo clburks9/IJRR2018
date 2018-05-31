@@ -146,6 +146,7 @@ class SimulationWindow(QWidget):
 		if(self.CONTROL_TYPE=='Human'):
 			if(event.key() in arrowEvents):
 				moveRobot(self,event.key()); 
+		
 
 	#Initializes robot position in layer
 	def makeRobot(self):
@@ -320,26 +321,32 @@ class SimulationWindow(QWidget):
 		pushLabel.setFont(sectionHeadingFont);
 		self.layout.addWidget(pushLabel,6,2); 
 
-		self.positivityDrop = QComboBox(); 
-		self.positivityDrop.addItem("Is"); 
-		self.positivityDrop.addItem("Is not"); 
-		self.layout.addWidget(self.positivityDrop,7,2); 
 
-		self.relationsDrop = QComboBox();
-		self.relationsDrop.addItem("Near"); 
-		self.relationsDrop.addItem("North of"); 
-		self.relationsDrop.addItem("South of");
-		self.relationsDrop.addItem("East of");
-		self.relationsDrop.addItem("West of");
-		self.layout.addWidget(self.relationsDrop,7,3); 
+		self.pushChat = QLineEdit();
+		self.pushChat.setPlaceholderText("What do you see?");  
+		self.layout.addWidget(self.pushChat,7,2,1,3); 
+		# self.positivityDrop = QComboBox(); 
+		# self.positivityDrop.addItem("Is"); 
+		# self.positivityDrop.addItem("Is not"); 
+		# self.layout.addWidget(self.positivityDrop,7,2); 
 
-		self.objectsDrop = QComboBox();
-		self.objectsDrop.addItem("You"); 
-		self.layout.addWidget(self.objectsDrop,7,4); 
+		# self.relationsDrop = QComboBox();
+		# self.relationsDrop.addItem("Near"); 
+		# self.relationsDrop.addItem("North of"); 
+		# self.relationsDrop.addItem("South of");
+		# self.relationsDrop.addItem("East of");
+		# self.relationsDrop.addItem("West of");
+		# self.layout.addWidget(self.relationsDrop,7,3); 
 
-		self.pushButton = QPushButton("Submit"); 
-		self.pushButton.setStyleSheet("background-color: green"); 
-		self.layout.addWidget(self.pushButton,7,5); 
+		# self.objectsDrop = QComboBox();
+		# self.objectsDrop.addItem("You"); 
+		# self.layout.addWidget(self.objectsDrop,7,4);
+
+
+
+		# self.pushButton = QPushButton("Submit"); 
+		# self.pushButton.setStyleSheet("background-color: green"); 
+		# self.layout.addWidget(self.pushButton,7,5); 
 
 
 		#Drone Launch Section
@@ -388,7 +395,9 @@ class SimulationWindow(QWidget):
 
 		self.noButton.clicked.connect(lambda: getNewRobotPullQuestion(self)); 
 
-		self.pushButton.clicked.connect(lambda: pushButtonPressed(self)); 
+		#self.pushButton.clicked.connect(lambda: pushButtonPressed(self)); 
+
+		self.pushChat.returnPressed.connect(lambda: pushButtonPressed(self)); 
 
 		self.imageScene.mousePressEvent = lambda event:imageMousePress(event,self); 
 		self.imageScene.mouseMoveEvent = lambda event:imageMouseMove(event,self); 
