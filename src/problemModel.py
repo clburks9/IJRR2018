@@ -127,7 +127,7 @@ class Model:
 
 	def makeSketch(self,vertices,name):
 		pz = Softmax(); 
-		vertices.sort(key=lambda x: x[1])
+		#vertices.sort(key=lambda x: x[1])
 
 		pz.buildPointsModel(vertices,steepness=2); 
 		self.sketches[name] = pz; 

@@ -480,6 +480,10 @@ def loadQuestions(wind):
 
 
 
+def pushButtonPressedNew(wind):
+	#Need to build similarity of phrases
+	pass; 
+
 def pushButtonPressed(wind):
 	#rel = str(wind.relationsDrop.currentText()) 
 	#name = str(wind.objectsDrop.currentText());
@@ -494,17 +498,21 @@ def pushButtonPressed(wind):
 		#print(text); 
 
 		pos = 'Is'; 
-		negators = ['not','isn\'t','isnt','aint','ain\'t','\'t'];
+		negators = ['not','isn\'t','isnt','aint','ain\'t','\'t','Not','nt'];
 		for n in negators:
 			if(n in text):
 				pos = 'Is not'; 
 
+		print(text); 
 		rel = 'near'; 
-		options = ['south','north','east','west'];
+		options = ['south','north','east','west','South','North','West','East'];
 		for o in options:
-			if(o.lower() in text):
 
-				rel = o.lower() + ' of'; 
+			if(o in text):
+				if(o.lower is not 'near'):
+					rel = o.lower() + ' of'; 
+				else:
+					rel = o.lower(); 
 				break; 
 
 		name = 'You'; 
@@ -513,6 +521,8 @@ def pushButtonPressed(wind):
 			if(t in text):
 				name = t; 
 				break; 
+
+		print(pos,rel,name); 
 
 		wind.assumedModel.stateObsUpdate(name,rel,pos); 
 
