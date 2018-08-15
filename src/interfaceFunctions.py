@@ -255,7 +255,6 @@ def updateModels(wind,name,cost,speed):
 
 	vertices = fitSimplePolyToHull(cHull,pairedPoints,N=wind.NUM_SKETCH_POINTS); 
 
-
 	centx = np.mean([vertices[i][0] for i in range(0,len(vertices))])-xFudge; 
 	centy = np.mean([vertices[i][1] for i in range(0,len(vertices))]) 
 	wind.sketchLabels[name] = [centx,centy]; 
@@ -498,7 +497,7 @@ def pushButtonPressed(wind):
 		#print(text); 
 
 		pos = 'Is'; 
-		negators = ['not','isn\'t','isnt','aint','ain\'t','\'t','Not','nt'];
+		negators = ['not','isn\'t','isnt','aint','ain\'t','\'t','Not','nt','nothing'];
 		for n in negators:
 			if(n in text):
 				pos = 'Is not'; 

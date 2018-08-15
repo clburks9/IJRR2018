@@ -130,6 +130,9 @@ class Model:
 		#vertices.sort(key=lambda x: x[1])
 
 		pz.buildPointsModel(vertices,steepness=2); 
+
+		#pz.plot2D(low=[0,0],high=[500,800],delta=11); 
+
 		self.sketches[name] = pz; 
 
 	def stateObsUpdate(self,name,relation,pos="Is"):

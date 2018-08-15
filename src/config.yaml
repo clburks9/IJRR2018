@@ -62,4 +62,4 @@ Model:
   breadCrumbLength: 100
 
   #Which pre-generated belief to use, {1-10}
-  belNum: None
+  belNum: 8
