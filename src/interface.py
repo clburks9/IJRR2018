@@ -93,7 +93,7 @@ class SimulationWindow(QWidget):
 		self.allSketchPaths = []; 
 		self.allSketchPlanes = {}; 
 		self.sketchLabels = {}; 
-		self.sketchDensity = 3; #radius in pixels of drawn sketch points
+		self.sketchDensity = self.params['Interface']['sketchDensity']; 
 		self.NUM_SKETCH_POINTS = self.params['Interface']['numSketchPoints']; 
 
 		#Drone Params

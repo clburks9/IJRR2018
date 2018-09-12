@@ -27,6 +27,8 @@ Interface:
   #Whether or not to save the results
   saving: False
 
+  #Radius in pixels of drawn sketch points
+  sketchDensity: 4
 
   ###Drone Params
 
