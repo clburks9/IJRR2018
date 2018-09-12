@@ -73,8 +73,10 @@ class SimulationWindow(QWidget):
 		beliefType = self.params['Model']['belNum']; 
 		pushing = self.params['Interface']['pushing']; 
 		self.CONTROL_TYPE = self.params['Interface']['controlType']; 
-		#self.SAVE_FILE = '../data/{}_bel{}_{}'.format(self.CONTROL_TYPE,beliefType,pushing,time.asctime().replace(' ','').replace(':','_')); 
-		self.SAVE_FILE = None; 
+		if(self.params['Interface']['saving']):
+			self.SAVE_FILE = '../data/{}_bel{}_{}'.format(self.CONTROL_TYPE,beliefType,pushing,time.asctime().replace(' ','').replace(':','_')); 
+		else:
+			self.SAVE_FILE = None; 
 
 		#Make Models
 		self.trueModel = Model(self.params,trueModel=True);

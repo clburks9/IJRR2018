@@ -24,6 +24,9 @@ Interface:
   #Number of points to retain in polygon fitting, {3-\inf}
   numSketchPoints: 4
 
+  #Whether or not to save the results
+  saving: False
+
 
   ###Drone Params
 
